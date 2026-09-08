@@ -171,8 +171,13 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
   Completed: ignored caches, environment files, local databases/logs/exports;
   staged only specifications, packaging, source and synthetic tests. Baseline
   commit retains old broker code for history; active removal is S03.
-- [ ] S02: Inspect prior partial implementation; run existing checks and record
+- [x] S02: Inspect prior partial implementation; run existing checks and record
   results. Classify reusable recommendation contracts and deferred broker code.
+  Completed: baseline 309c5f0; 46 tests pass, mypy passes, format passes; Ruff
+  reports UP047 in validation and E501 in scenarios. Reuse Event/Evidence,
+  Decision, valuation, TradePlan and immutable revisions. Remove broker state,
+  order/fill/position models, reconciliation and their scenarios in S03.
+  Existing tests pass old requirements only, not the revised MVP.
 - [ ] S03: Refactor active domain contracts for recommendations/advisory sizing;
   remove broker coupling from MVP APIs and scenarios. Verify contract tests.
 - [ ] S04: Add complete-plan/policy-context validators and invalid-output tests.
