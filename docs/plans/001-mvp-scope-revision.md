@@ -195,8 +195,12 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
   used UV_CACHE_DIR=/private/tmp/nomy-uv-cache and temporary uv path.
   Tests exercise domain health/notification facts, not real adapters. Updated
   README and data model. No new dependencies or production thresholds.
-- [ ] S06: Add SQLAlchemy models and first Alembic migration for immutable plans,
+- [x] S06: Add SQLAlchemy models and first Alembic migration for immutable plans,
   evidence, recommendations and outbox. Test upgrade and foreign keys.
+  Completed: migration 001, WAL/foreign-key setup and immutable journal triggers.
+  Two migration/immutability tests and mypy pass. SQLAlchemy Core tables are
+  the model layer; Alembic owns creation. Destructive downgrade deliberately
+  requires backup restore. Initial missing FK column types fixed and retested.
 - [ ] S07: Implement atomic recommendation/outbox writes and unique local intent;
   test rollback and repeated writes without duplicate recommendations.
 - [ ] S08: Add quota/cache/scan-run migration and persistent reservation API;

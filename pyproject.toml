@@ -7,7 +7,11 @@ name = "nomy-trader"
 version = "0.1.0"
 description = "Offline domain foundation for educational buy-side recommendations"
 requires-python = ">=3.12"
-dependencies = ["pydantic>=2.10,<3"]
+dependencies = [
+    "alembic>=1.14,<2",
+    "pydantic>=2.10,<3",
+    "sqlalchemy>=2,<3",
+]
 
 [dependency-groups]
 dev = ["pytest>=8,<10", "ruff>=0.11,<1", "mypy>=1.15,<2"]

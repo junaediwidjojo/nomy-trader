@@ -11,7 +11,7 @@ Stop and target fields are advisory; profitability is not assumed.
 The [ExecPlan](docs/plans/001-mvp-scope-revision.md) is approved. Milestone 1
 provides immutable recommendation contracts, complete-plan/policy validation,
 and offline scenarios. Broker models and reconciliation are removed from active
-code; the original implementation remains in Git history. SQLite, FMP, AI and
+code; the original implementation remains in Git history. SQLite persistence is in progress; FMP, AI and
 Telegram integrations are still pending. Resume at the first unchecked step.
 
 ## Run the offline foundation
@@ -38,3 +38,6 @@ Read AGENTS.md, PLANS.md, then docs/PRODUCT_SPEC.md, TRADING_POLICY.md,
 ARCHITECTURE.md, DATA_MODEL.md, EVALUATION.md and ROADMAP.md. Numeric policy TBDs
 remain unresolved. Original IBKR automation specifications are preserved under
 [historical design](docs/archive/ibkr-design/README.md) for possible future work.
+
+SQLAlchemy Core supplies transactional SQLite access; Alembic supplies versioned
+schema upgrades. These dependencies implement the approved persistence milestone.
