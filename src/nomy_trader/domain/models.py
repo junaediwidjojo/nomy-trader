@@ -267,3 +267,21 @@ class NotificationAttempt(Contract):
         elif self.sent_at is not None or self.provider_message_id is not None:
             raise ValueError("unconfirmed notification cannot contain sent facts")
         return self
+
+
+class RecommendationPolicy(Contract):
+    """Required policy context. No market/risk threshold is guessed here."""
+
+    version: Text
+    maximum_quote_age_seconds: Days
+    maximum_recommendation_age_seconds: Days
+    minimum_margin_of_safety: Confidence
+    portfolio_limits: Literal["unavailable"]
+
+
+class PipelineHealth(Contract):
+    data_available: Annotated[bool, Field(strict=True)]
+    evidence_available: Annotated[bool, Field(strict=True)]
+    model_available: Annotated[bool, Field(strict=True)]
+    persistence_available: Annotated[bool, Field(strict=True)]
+    quota_available: Annotated[bool, Field(strict=True)]

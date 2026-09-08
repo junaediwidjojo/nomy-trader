@@ -184,7 +184,10 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
   added explicit SizingInputs, SuggestedSize, Recommendation and immutable
   NotificationAttempt contracts. Retained advisory exit content. 38 tests pass,
   mypy and targeted Ruff pass. Remaining scenario replacements are S05.
-- [ ] S04: Add complete-plan/policy-context validators and invalid-output tests.
+- [x] S04: Add complete-plan/policy-context validators and invalid-output tests.
+  Completed: explicit policy/clock/health context, evidence retrieval timing,
+  buy-decision links, size arithmetic/budgets, quote age and expiry validators.
+  59 tests and mypy pass; Ruff/format pass. No runtime policy defaults introduced.
 - [ ] S05: Replace broker scenarios with notification/freshness/quota scenarios;
   run offline scenario command and full domain verification.
 - [ ] S06: Add SQLAlchemy models and first Alembic migration for immutable plans,
@@ -326,3 +329,11 @@ Decision update 2026-09-08: user selected D05 portfolio limits unavailable,
 with per-recommendation checks only, and delegated D04 sizing recommendations
 to the assistant. No actual capital amount was provided; any chosen reference
 capital must be labeled hypothetical, never presented as actual holdings.
+
+D04 recommendation delegated by user: hypothetical USD 10,000 reference,
+USD 25 planned loss-at-stop budget (0.25%), USD 500 notional cap (5%), whole
+shares rounded down, explicit dated inputs. This is an educational example,
+not actual capital or a recommendation to invest that amount. S19 will implement
+quantity selection; fixtures currently supply arithmetic for validation only.
+Stop-based loss is not a maximum loss guarantee (gaps/slippage/fees apply).
+D05 approved: portfolio limits unavailable; no portfolio enforcement claims.
