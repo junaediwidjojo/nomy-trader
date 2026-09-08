@@ -1,29 +1,16 @@
 """Pure aggregate validation. No state mutations or provider calls."""
 
-from typing import TypeVar
-
 from .models import (
-    Acknowledgement,
     Contract,
     Decision,
     Event,
     Evidence,
-    Fill,
-    Health,
-    Order,
-    OrderState,
-    PlanPosition,
-    PlanState,
-    PositionSnapshot,
-    ReconciliationResult,
     ThesisVersion,
     TradePlan,
 )
 
-T = TypeVar("T", bound=Contract)
 
-
-def unique_facts(facts: tuple[T, ...], identity: str) -> tuple[T, ...]:
+def unique_facts[T: Contract](facts: tuple[T, ...], identity: str) -> tuple[T, ...]:
     unique: dict[str, T] = {}
     for fact in facts:
         key = str(getattr(fact, identity))
@@ -66,75 +53,3 @@ def validate_revision(current: ThesisVersion, previous: ThesisVersion | None) ->
         or current.at <= previous.at
     ):
         raise ValueError("invalid append-only thesis revision")
-
-
-def validate_execution(
-    order: Order,
-    fills: tuple[Fill, ...],
-    acknowledgements: tuple[Acknowledgement, ...],
-) -> tuple[tuple[Fill, ...], tuple[Acknowledgement, ...]]:
-    fills = unique_facts(fills, "execution_id")
-    acknowledgements = unique_facts(acknowledgements, "id")
-    for fill in fills:
-        if (
-            fill.order_id != order.id
-            or fill.symbol != order.symbol
-            or fill.side != order.side
-            or fill.at < order.at
-        ):
-            raise ValueError("fill does not match order")
-    if sum(f.quantity for f in fills) > order.quantity:
-        raise ValueError("fills exceed order quantity")
-    broker_ids = set()
-    for ack in acknowledgements:
-        if ack.order_id != order.id or ack.at < order.at:
-            raise ValueError("acknowledgement does not match order")
-        broker_ids.add(ack.broker_order_id)
-    if len(broker_ids) > 1:
-        raise ValueError("multiple broker orders for one internal order")
-    return fills, acknowledgements
-
-
-ACTIVE = frozenset(
-    {
-        PlanState.ENTRY_PENDING,
-        PlanState.OPEN,
-        PlanState.REDUCING,
-        PlanState.RECONCILIATION_HOLD,
-    }
-)
-
-
-def reconcile(
-    positions: tuple[PositionSnapshot, ...],
-    plans: tuple[PlanPosition, ...],
-    orders: tuple[Order, ...],
-    health: Health,
-) -> ReconciliationResult:
-    issues: set[str] = set()
-    for name in ("broker_connected", "data_fresh", "protection_ok", "risk_ok"):
-        if not getattr(health, name):
-            issues.add(f"HEALTH:{name}")
-    if any(o.state == OrderState.UNKNOWN for o in orders):
-        issues.add("UNKNOWN_SUBMISSION")
-    if len({p.symbol for p in positions}) != len(positions):
-        issues.add("DUPLICATE_BROKER_SYMBOL")
-    if len({p.plan_id for p in plans}) != len(plans):
-        issues.add("DUPLICATE_PLAN_ID")
-    active = [p for p in plans if p.state in ACTIVE]
-    for plan in active:
-        if plan.state == PlanState.RECONCILIATION_HOLD:
-            issues.add(f"RECONCILIATION_HOLD:{plan.plan_id}")
-    for position in positions:
-        if not position.quantity:
-            continue
-        matches = [p for p in active if p.symbol == position.symbol]
-        if len(matches) != 1:
-            issues.add(f"PLAN_MAPPING:{position.symbol}")
-        elif matches[0].quantity != position.quantity:
-            issues.add(f"QUANTITY_MISMATCH:{position.symbol}")
-    held = {p.symbol for p in positions if p.quantity}
-    for plan in active:
-        if plan.symbol not in held:
-            issues.add(f"ORDER_HISTORY_REQUIRED:{plan.plan_id}")
-    return ReconciliationResult(issues=tuple(sorted(issues)))

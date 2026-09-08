@@ -1,4 +1,4 @@
-"""Boundary models. Validation establishes consistency, never order authority."""
+"""Boundary models establish consistency, never delivery/execution authority."""
 
 from datetime import UTC
 from decimal import Decimal
@@ -32,10 +32,6 @@ class Action(StrEnum):
     REJECT = "REJECT"
     WAIT = "WAIT"
     PROPOSE_BUY = "PROPOSE_BUY"
-    HOLD = "HOLD"
-    REDUCE = "REDUCE"
-    EXIT = "EXIT"
-    RAISE_STOP = "RAISE_STOP"
 
 
 class Category(StrEnum):
@@ -46,29 +42,6 @@ class Category(StrEnum):
     GOVERNANCE = "GOVERNANCE"
     CORRECT_REPRICING = "CORRECT_REPRICING"
     MARKET_SECTOR = "MARKET_SECTOR"
-
-
-class PlanState(StrEnum):
-    DRAFT = "DRAFT"
-    APPROVED = "APPROVED"
-    ENTRY_PENDING = "ENTRY_PENDING"
-    OPEN = "OPEN"
-    REDUCING = "REDUCING"
-    CLOSED = "CLOSED"
-    REJECTED = "REJECTED"
-    EXPIRED = "EXPIRED"
-    RECONCILIATION_HOLD = "RECONCILIATION_HOLD"
-
-
-class OrderState(StrEnum):
-    PROPOSED = "PROPOSED"
-    SUBMITTED = "SUBMITTED"
-    ACKNOWLEDGED = "ACKNOWLEDGED"
-    PARTIALLY_FILLED = "PARTIALLY_FILLED"
-    FILLED = "FILLED"
-    CANCELLED = "CANCELLED"
-    REJECTED = "REJECTED"
-    UNKNOWN = "UNKNOWN"
 
 
 class Event(Contract):
@@ -181,7 +154,6 @@ class TradePlan(Contract):
     strategy_version: Text
     model_version: Text
     prompt_version: Text
-    state: PlanState = PlanState.DRAFT
 
     @model_validator(mode="after")
     def exits(self) -> Self:
@@ -204,74 +176,94 @@ class ThesisVersion(Contract):
     changed_assumptions: tuple[Text, ...]
 
 
-class Order(Contract):
-    id: Text
-    idempotency_key: Text
-    plan_id: Text
-    symbol: Text
-    side: Literal["BUY", "SELL"]
-    quantity: Positive
-    kind: Literal["LIMIT", "STOP", "MARKET"]
-    limit_price: Positive | None = None
-    stop_price: Positive | None = None
-    state: OrderState
-    at: Timestamp
-    mode: Literal["paper"] = "paper"
+class SizingInputs(Contract):
+    """Explicit policy inputs; no capital or risk defaults are supplied."""
+
+    policy_version: Text
+    source: Text
+    as_of: Timestamp
+    valid_until: Timestamp
+    currency: Literal["USD"]
+    reference_capital: Positive
+    risk_budget: Positive
+    maximum_notional: Positive
+    quantity_increment: Positive
 
     @model_validator(mode="after")
-    def prices(self) -> Self:
-        if (self.limit_price is not None) != (self.kind == "LIMIT"):
-            raise ValueError("limit price must match order kind")
-        if (self.stop_price is not None) != (self.kind == "STOP"):
-            raise ValueError("stop price must match order kind")
+    def bounds(self) -> Self:
+        if self.valid_until <= self.as_of:
+            raise ValueError("sizing input validity must follow its as-of time")
+        if max(self.risk_budget, self.maximum_notional) > self.reference_capital:
+            raise ValueError("advisory budgets exceed reference capital")
         return self
 
 
-class Acknowledgement(Contract):
-    id: Text
-    order_id: Text
-    broker_order_id: Text
-    state: OrderState
-    at: Timestamp
+class SuggestedSize(Contract):
+    """Output supplied by deterministic sizing, never part of analyst output."""
 
-
-class Fill(Contract):
-    execution_id: Text
-    order_id: Text
-    symbol: Text
-    side: Literal["BUY", "SELL"]
+    inputs: SizingInputs
     quantity: Positive
-    price: Positive
-    commission: Nonnegative | None
-    at: Timestamp
+    notional: Positive
+    loss_at_stop: Positive
+    calculation_version: Text
 
 
-class PositionSnapshot(Contract):
-    symbol: Text
-    quantity: Nonnegative
-    at: Timestamp
+class Recommendation(Contract):
+    id: Text
+    schema_version: Literal["1"]
+    idempotency_key: Text
+    plan: TradePlan
+    decision_id: Text
+    quote_as_of: Timestamp
+    created_at: Timestamp
+    expires_at: Timestamp
+    sizing: SuggestedSize
+
+    @model_validator(mode="after")
+    def chronology(self) -> Self:
+        if not self.quote_as_of <= self.plan.created_at <= self.created_at:
+            raise ValueError("invalid recommendation chronology")
+        if self.expires_at <= self.created_at:
+            raise ValueError("recommendation expiry must follow creation")
+        return self
 
 
-class PlanPosition(Contract):
-    plan_id: Text
-    symbol: Text
-    state: PlanState
-    quantity: Nonnegative
+class DeliveryStatus(StrEnum):
+    PENDING = "PENDING"
+    SENDING = "SENDING"
+    SENT = "SENT"
+    FAILED = "FAILED"
+    UNKNOWN = "UNKNOWN"
 
 
-class Health(Contract):
-    broker_connected: bool
-    data_fresh: bool
-    protection_ok: bool
-    risk_ok: bool
-    model_available: bool
-    mode: Literal["paper"] = "paper"
+class NotificationAttempt(Contract):
+    """Immutable attempt snapshot. SENT means acknowledged by Telegram only."""
 
+    id: Text
+    recommendation_id: Text
+    status: DeliveryStatus
+    recorded_at: Timestamp
+    attempted_at: Timestamp | None = None
+    sent_at: Timestamp | None = None
+    provider_message_id: Text | None = None
+    error_code: Text | None = None
 
-class ReconciliationResult(Contract):
-    issues: tuple[Text, ...]
-
-    @property
-    def new_orders_allowed(self) -> bool:
-        """Necessary health condition only; never execution authorization."""
-        return not self.issues
+    @model_validator(mode="after")
+    def delivery_facts(self) -> Self:
+        if self.status == DeliveryStatus.PENDING:
+            if self.attempted_at is not None:
+                raise ValueError("pending notification has not been attempted")
+        elif self.attempted_at is None:
+            raise ValueError("attempted notification requires attempt time")
+        if self.attempted_at is not None and self.attempted_at > self.recorded_at:
+            raise ValueError("attempt follows recorded time")
+        if self.status == DeliveryStatus.SENT:
+            if self.sent_at is None or self.provider_message_id is None:
+                raise ValueError("sent requires provider acknowledgement")
+            if self.attempted_at is None or not (
+                self.attempted_at <= self.sent_at <= self.recorded_at
+            ):
+                raise ValueError("invalid send chronology")
+        elif self.sent_at is not None or self.provider_message_id is not None:
+            raise ValueError("unconfirmed notification cannot contain sent facts")
+        return self

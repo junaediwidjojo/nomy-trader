@@ -178,8 +178,12 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
   Decision, valuation, TradePlan and immutable revisions. Remove broker state,
   order/fill/position models, reconciliation and their scenarios in S03.
   Existing tests pass old requirements only, not the revised MVP.
-- [ ] S03: Refactor active domain contracts for recommendations/advisory sizing;
+- [x] S03: Refactor active domain contracts for recommendations/advisory sizing;
   remove broker coupling from MVP APIs and scenarios. Verify contract tests.
+  Completed: removed order/fill/position/reconciliation and sell-action contracts;
+  added explicit SizingInputs, SuggestedSize, Recommendation and immutable
+  NotificationAttempt contracts. Retained advisory exit content. 38 tests pass,
+  mypy and targeted Ruff pass. Remaining scenario replacements are S05.
 - [ ] S04: Add complete-plan/policy-context validators and invalid-output tests.
 - [ ] S05: Replace broker scenarios with notification/freshness/quota scenarios;
   run offline scenario command and full domain verification.
@@ -317,3 +321,8 @@ recommendation-only safety agreement changes. Current worktree has no Git; futur
 resume notes must include commit IDs once available. Original paper-only rule
 constrains any future system execution; the MVP does not control the user's
 external app or authorize a live broker integration.
+
+Decision update 2026-09-08: user selected D05 portfolio limits unavailable,
+with per-recommendation checks only, and delegated D04 sizing recommendations
+to the assistant. No actual capital amount was provided; any chosen reference
+capital must be labeled hypothetical, never presented as actual holdings.

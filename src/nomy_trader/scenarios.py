@@ -5,22 +5,14 @@ from datetime import UTC, datetime
 from decimal import Decimal
 
 from .domain.models import (
-    Acknowledgement,
     Action,
     Category,
     Decision,
     Event,
     Evidence,
-    Fill,
-    Health,
-    Order,
-    OrderState,
-    PlanPosition,
-    PlanState,
-    PositionSnapshot,
     TradePlan,
 )
-from .domain.validation import reconcile, validate_context, validate_execution
+from .domain.validation import validate_context
 
 AT = datetime(2026, 1, 5, 16, tzinfo=UTC)
 
@@ -77,7 +69,7 @@ def plan() -> TradePlan:
             "stop": "95",
             "expected_calendar_days": 5,
             "maximum_calendar_days": 10,
-            "exit_policy": "Synthetic full exit at target, stop, invalidation or expiry",
+            "exit_policy": "Synthetic advisory exit at target, stop or expiry",
             "thesis": "Synthetic temporary interruption",
             "assumptions": ["Recovery"],
             "invalidations": ["Permanent shutdown"],
@@ -87,53 +79,6 @@ def plan() -> TradePlan:
             "model_version": "none",
             "prompt_version": "none",
         }
-    )
-
-
-def health() -> Health:
-    return Health(
-        broker_connected=True,
-        data_fresh=True,
-        protection_ok=True,
-        risk_ok=True,
-        model_available=True,
-    )
-
-
-def order() -> Order:
-    return Order(
-        id="order-1",
-        idempotency_key="intent-1",
-        plan_id="plan-1",
-        symbol="SYNTH",
-        side="BUY",
-        quantity=Decimal("10"),
-        kind="LIMIT",
-        limit_price=Decimal("100"),
-        state=OrderState.PARTIALLY_FILLED,
-        at=AT,
-    )
-
-
-def execution() -> tuple[Fill, Acknowledgement]:
-    return (
-        Fill(
-            execution_id="exec-1",
-            order_id="order-1",
-            symbol="SYNTH",
-            side="BUY",
-            quantity=Decimal("4"),
-            price=Decimal("99"),
-            commission=None,
-            at=AT,
-        ),
-        Acknowledgement(
-            id="ack-1",
-            order_id="order-1",
-            broker_order_id="synthetic-1",
-            state=OrderState.ACKNOWLEDGED,
-            at=AT,
-        ),
     )
 
 
@@ -173,32 +118,6 @@ def late() -> bool:
     return False
 
 
-def duplicate() -> bool:
-    fill, ack = execution()
-    fills, acks = validate_execution(order(), (fill, fill), (ack, ack))
-    return len(fills) == len(acks) == 1 and fills[0].quantity == 4
-
-
-def stale() -> bool:
-    h = Health.model_validate({**health().model_dump(), "data_fresh": False})
-    return not reconcile((), (), (), h).new_orders_allowed
-
-
-def model_outage() -> bool:
-    h = Health.model_validate(
-        {**health().model_dump(), "model_available": False, "protection_ok": False}
-    )
-    return "HEALTH:protection_ok" in reconcile((), (), (), h).issues
-
-
-def mismatch() -> bool:
-    position = PositionSnapshot(symbol="SYNTH", quantity=Decimal("4"), at=AT)
-    internal = PlanPosition(
-        plan_id="plan-1", symbol="SYNTH", state=PlanState.OPEN, quantity=Decimal("5")
-    )
-    return not reconcile((position,), (internal,), (), health()).new_orders_allowed
-
-
 SCENARIOS: tuple[tuple[str, Callable[[], bool]], ...] = (
     ("temporary operational issue and recovery premise", temporary),
     (
@@ -216,10 +135,6 @@ SCENARIOS: tuple[tuple[str, Callable[[], bool]], ...] = (
     ),
     ("conflicting sources", lambda: classification(Category.UNCERTAIN, Action.WAIT)),
     ("late or revised evidence", late),
-    ("stale price data", stale),
-    ("partial fill and duplicate acknowledgement", duplicate),
-    ("model outage while position monitoring fails protection", model_outage),
-    ("broker/database mismatch", mismatch),
 )
 
 
