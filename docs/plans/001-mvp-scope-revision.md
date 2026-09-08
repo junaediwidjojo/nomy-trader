@@ -201,8 +201,12 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
   Two migration/immutability tests and mypy pass. SQLAlchemy Core tables are
   the model layer; Alembic owns creation. Destructive downgrade deliberately
   requires backup restore. Initial missing FK column types fixed and retested.
-- [ ] S07: Implement atomic recommendation/outbox writes and unique local intent;
+- [x] S07: Implement atomic recommendation/outbox writes and unique local intent;
   test rollback and repeated writes without duplicate recommendations.
+  Completed: journal validates context then commits source/plan/recommendation
+  and outbox in one transaction. Conflicting immutable identities fail. Five
+  storage tests pass, including injected outbox failure rollback, repeated
+  intent and reopen durability. Mypy and Ruff pass. No send adapter exists.
 - [ ] S08: Add quota/cache/scan-run migration and persistent reservation API;
   test restart accounting and configured reset boundary.
 - [ ] S09: Verify FMP account endpoint/field entitlements with minimal sanitized
