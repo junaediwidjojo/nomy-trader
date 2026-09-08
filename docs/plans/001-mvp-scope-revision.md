@@ -216,14 +216,21 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
   Full milestone verification: 75 tests, 12 scenarios, uv locked sync, Ruff
   format/check and mypy all pass on Python 3.14.6 (offline). Cache ingestion
   and scan recording are intentionally deferred to their adapter steps.
-- [ ] S09: Verify FMP account endpoint/field entitlements with minimal sanitized
+- [x] S09: Verify FMP account endpoint/field entitlements with minimal sanitized
   requests; record actual quota cost and freshness. Stop if D01 is unsatisfied.
-  Resume: not started. FMP_API_KEY was absent and no local .env existed at
-  checkpoint. User must provision a key locally (never paste it into chat).
-  Once available, make a minimal read-only entitlement request with sanitized
-  output; verify losers/screener, quote/history fields and quota semantics.
-  No authenticated FMP request or Telegram send has occurred. S10+ not started.
-  Do not proceed with assumed endpoint access or spend a paid subscription.
+  Completed: 2026-09-08, three authenticated read-only requests returned HTTP
+  200: `stable/biggest-losers` returned 50 rows with symbol/price/change/
+  percentage/exchange; `stable/quote?symbol=AAPL` returned price, market cap,
+  volume and timestamp; `stable/historical-price-eod/light?symbol=AAPL` returned
+  date/price/volume (1,253 rows; requested limit was not honored). FMP dashboard
+  accounting is unavailable through the API, so the verified local cost is three
+  request initiations, not a confirmed provider-billed count. At 2026-09-08
+  09:47 UTC the quote/history latest time was Friday 2026-09-04 20:00 UTC / date
+  2026-09-04: appropriate only for an end-of-day recheck before the next U.S.
+  session, never a live-intraday claim. FMP key was sourced locally and never
+  printed. D01 is satisfied for end-of-day discovery/recheck only; spread/halt
+  access and intraday freshness remain unavailable and must block any policy
+  requiring them. No Telegram send occurred.
 - [ ] S10: Implement FMP HTTP wrapper with typed response models and redaction;
   test malformed payload, authentication, timeout and server failures offline.
 - [ ] S11: Implement losers/screener discovery and rate-limit handling through
