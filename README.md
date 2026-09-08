@@ -19,6 +19,22 @@ dynamic-candidate recheck. Resume at S12 only after resolving that provider gate
 
 ## Run the offline foundation
 
+## Massive registration for the approved recheck provider
+
+1. Register at https://massive.com/dashboard/signup.
+2. Select Stocks Basic ($0/month), for personal use. This provides end-of-day
+   data at five API calls per minute; no paid subscription is needed for this test.
+3. Find your API key in the Massive dashboard.
+4. Add `MASSIVE_API_KEY=your_key_here` to the existing local `.env`, keeping
+   `FMP_API_KEY` as well. Never paste either key into chat or commit it.
+5. Resume S12a in the ExecPlan to verify actual candidate coverage before use.
+
+Massive integration is approved but not implemented yet. Its free bars do not
+provide real-time bid/ask quotes. Official setup:
+https://massive.com/docs/rest/quickstart
+
+## Offline verification
+
 Install Python 3.12+ and uv, then run:
 
 ```sh

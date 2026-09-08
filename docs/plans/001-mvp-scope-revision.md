@@ -1,5 +1,13 @@
 # nomy-trader — FMP and Telegram recommendation MVP ExecPlan
 
+Latest approved direction: user approved Massive Stocks Basic for end-of-day
+price/volume rechecks, retaining FMP discovery. This supersedes FMP-only
+enrichment below. Account registration/key provisioning is pending. No paid
+subscription is authorized. Use local MASSIVE_API_KEY alongside FMP_API_KEY.
+Recheck remains daily-bar analysis; missing spread/halt/fundamental fields
+still cannot silently pass eligibility. Existing FMP recheck code is historical
+partial work, not a working Massive adapter.
+
 Status: implementation approved by user on 2026-09-08. Recommendation-domain
 foundation and SQLite persistence milestones complete; S09 awaits FMP credentials. Unspecified policy values remain unset. This supersedes 001-domain-contracts.md for active
 work. The ten numbered sections below follow PLANS.md.
@@ -254,6 +262,18 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
   A live run wrote one ScanRun to ignored `var/nomy-trader.sqlite`.
 - [ ] S12: Implement entitled quote/history enrichment and cache freshness;
   test missing fields, stale timestamps and batch/per-symbol budget bounds.
+  Approved replacement checklist (complete and commit each substep):
+  - [ ] S12a: User registers Massive Stocks Basic ($0) and provisions
+    MASSIVE_API_KEY in the ignored local .env. Verify actual candidate access.
+  - [ ] S12b: Add typed Massive daily OHLCV adapter and sanitized HTTP failures;
+    test unavailable symbols, missing/invalid fields and auth/429 failures.
+  - [ ] S12c: Add separate persistent rate accounting allowing no more than five
+    Massive requests in any rolling minute, including retries/pagination.
+  - [ ] S12d: Replace active recheck with Massive completed-session bars; preserve
+    source dates, validate session freshness and cache immutable observations.
+    Never turn end-of-day bars into a live quote or fill missing policy fields.
+  - [ ] S12e: Test and run one bounded FMP discovery-to-Massive recheck cycle;
+    log data/limitations and update the active specs and next resume point.
   Resume: code and fixture tests are complete: a recheck reserves quote/history
   calls, verifies symbols and writes immutable cache snapshots. The 2026-09-08
   live recheck consumed the quote reservation then received HTTP 402 for the
