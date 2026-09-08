@@ -11,8 +11,11 @@ Stop and target fields are advisory; profitability is not assumed.
 The [ExecPlan](docs/plans/001-mvp-scope-revision.md) is approved. Milestone 1
 provides immutable recommendation contracts, complete-plan/policy validation,
 and offline scenarios. Broker models and reconciliation are removed from active
-code; the original implementation remains in Git history. SQLite journal/outbox/quota persistence is implemented; FMP, AI and
-Telegram integrations are still pending. Resume at the first unchecked step.
+code; the original implementation remains in Git history. SQLite journal/outbox/quota
+persistence and FMP loser discovery are implemented; AI and Telegram integrations
+are still pending. The verified FMP free account can list 50 losers but returned
+HTTP 402 when rechecking a live loser quote, so it cannot yet produce a reliable
+dynamic-candidate recheck. Resume at S12 only after resolving that provider gate.
 
 ## Run the offline foundation
 

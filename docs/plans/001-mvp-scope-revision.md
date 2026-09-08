@@ -230,7 +230,11 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
   session, never a live-intraday claim. FMP key was sourced locally and never
   printed. D01 is satisfied for end-of-day discovery/recheck only; spread/halt
   access and intraday freshness remain unavailable and must block any policy
-  requiring them. No Telegram send occurred.
+  requiring them. Correction after the first real discovery-to-recheck attempt:
+  the first live loser returned HTTP 402 from `stable/quote`, although AAPL
+  worked. Therefore D01 is **not** satisfied for actual dynamic candidates:
+  this free account offers discovery but cannot reliably enrich the discovered
+  symbols. No Telegram send occurred.
 - [x] S10: Implement FMP HTTP wrapper with typed response models and redaction;
   test malformed payload, authentication, timeout and server failures offline.
   Completed: `providers.fmp` loads the local ignored `.env`, exposes typed
@@ -240,10 +244,22 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
   returned 50 candidates using the local key; no symbol or secret was logged.
   `httpx` provides bounded HTTP transport; `python-dotenv` makes the documented
   local `.env` setup work. S11 must consume quota reservations before each call.
-- [ ] S11: Implement losers/screener discovery and rate-limit handling through
+- [x] S11: Implement losers/screener discovery and rate-limit handling through
   the quota API; test pagination caps, 429 and budget exhaustion.
+  Completed: one FMP biggest-losers response is reserved before dispatch and
+  persisted as an immutable ScanRun marked “potential candidates only.” The
+  endpoint provides a fixed 50-row response and no documented pagination was
+  exercised, so no pagination loop exists. Tests cover durable candidate logs,
+  429 reservation retention and exhausted budget preventing a second HTTP call.
+  A live run wrote one ScanRun to ignored `var/nomy-trader.sqlite`.
 - [ ] S12: Implement entitled quote/history enrichment and cache freshness;
   test missing fields, stale timestamps and batch/per-symbol budget bounds.
+  Resume: code and fixture tests are complete: a recheck reserves quote/history
+  calls, verifies symbols and writes immutable cache snapshots. The 2026-09-08
+  live recheck consumed the quote reservation then received HTTP 402 for the
+  first actual loser; no cache was written. It must remain unchecked until D01
+  is resolved with a free-tier-supported dynamic-candidate endpoint, explicit
+  paid plan approval, or a revised scope. Do not retry or bypass filters.
 - [ ] S13: Implement deterministic candidate filters from approved parameters;
   verify boundary cases and no silent fallback for absent required fields.
 - [ ] S14: Implement event deduplication across scans and restarts; test repeats
