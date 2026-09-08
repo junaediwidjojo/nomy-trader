@@ -35,3 +35,16 @@ sent recommendation data for manual export. Do not infer holdings or exposure
 from sent messages. Order, Fill, PositionSnapshot, PositionReview, reconciliation
 and active position lifecycle are removed from the active MVP model; prior
 partial implementation must be reviewed after plan approval.
+
+## Implemented domain foundation
+
+`domain.models` supplies immutable Event/Evidence/Decision/TradePlan/thesis
+revision, SizingInputs/SuggestedSize, Recommendation, NotificationAttempt and
+explicit policy/health contracts. `validate_recommendation` checks context,
+chronology, arithmetic and caps; it does not calculate final size or send.
+Duration fields explicitly use calendar days; actual duration values are unset.
+Portfolio applicability is explicitly `unavailable`, following user decision.
+Notification status has no trade-state semantics. Current recommendation
+validation requires evidence retrieval before analysis; historical context
+validation may accept later archival retrieval with earlier proven availability.
+Persistence/append-only database enforcement remains the next milestone.

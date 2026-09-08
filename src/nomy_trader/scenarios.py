@@ -118,6 +118,51 @@ def late() -> bool:
     return False
 
 
+def unavailable(flag: str) -> bool:
+    # Import lazily so the fixture builders can reuse this module's source facts.
+    from .domain.models import PipelineHealth
+    from .domain.validation import validate_recommendation
+    from .fixtures import context
+
+    args = context()
+    args["health"] = PipelineHealth.model_validate(
+        {**args["health"].model_dump(), flag: False}
+    )
+    try:
+        validate_recommendation(**args)
+    except ValueError:
+        return True
+    return False
+
+
+def stale_quote() -> bool:
+    from datetime import timedelta
+
+    from .domain.validation import validate_recommendation
+    from .fixtures import context
+
+    args = context()
+    args["now"] += timedelta(seconds=301)
+    try:
+        validate_recommendation(**args)
+    except ValueError:
+        return True
+    return False
+
+
+def ambiguous_notification() -> bool:
+    from .domain.models import DeliveryStatus, NotificationAttempt
+
+    attempt = NotificationAttempt(
+        id="attempt-1",
+        recommendation_id="rec-1",
+        status=DeliveryStatus.UNKNOWN,
+        attempted_at=AT,
+        recorded_at=AT,
+    )
+    return attempt.sent_at is None and attempt.provider_message_id is None
+
+
 SCENARIOS: tuple[tuple[str, Callable[[], bool]], ...] = (
     ("temporary operational issue and recovery premise", temporary),
     (
@@ -135,6 +180,14 @@ SCENARIOS: tuple[tuple[str, Callable[[], bool]], ...] = (
     ),
     ("conflicting sources", lambda: classification(Category.UNCERTAIN, Action.WAIT)),
     ("late or revised evidence", late),
+    ("stale quote blocks recommendation", stale_quote),
+    ("quota unavailable blocks recommendation", lambda: unavailable("quota_available")),
+    ("model outage blocks recommendation", lambda: unavailable("model_available")),
+    (
+        "persistence unavailable blocks recommendation",
+        lambda: unavailable("persistence_available"),
+    ),
+    ("ambiguous notification is not confirmed sent", ambiguous_notification),
 )
 
 

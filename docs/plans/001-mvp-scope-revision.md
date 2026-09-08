@@ -1,7 +1,7 @@
 # nomy-trader — FMP and Telegram recommendation MVP ExecPlan
 
 Status: implementation approved by user on 2026-09-08. Recommendation-domain
-foundation in progress. Unspecified policy values remain unset. This supersedes 001-domain-contracts.md for active
+foundation complete; persistence milestone next. Unspecified policy values remain unset. This supersedes 001-domain-contracts.md for active
 work. The ten numbered sections below follow PLANS.md.
 
 ## 1. Goal and user-visible outcome
@@ -188,8 +188,13 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
   Completed: explicit policy/clock/health context, evidence retrieval timing,
   buy-decision links, size arithmetic/budgets, quote age and expiry validators.
   59 tests and mypy pass; Ruff/format pass. No runtime policy defaults introduced.
-- [ ] S05: Replace broker scenarios with notification/freshness/quota scenarios;
+- [x] S05: Replace broker scenarios with notification/freshness/quota scenarios;
   run offline scenario command and full domain verification.
+  Completed: 12/12 offline scenarios; 64 pytest tests. uv sync --locked
+  --offline, Ruff format/check and mypy all passed on Python 3.14.6. Commands
+  used UV_CACHE_DIR=/private/tmp/nomy-uv-cache and temporary uv path.
+  Tests exercise domain health/notification facts, not real adapters. Updated
+  README and data model. No new dependencies or production thresholds.
 - [ ] S06: Add SQLAlchemy models and first Alembic migration for immutable plans,
   evidence, recommendations and outbox. Test upgrade and foreign keys.
 - [ ] S07: Implement atomic recommendation/outbox writes and unique local intent;

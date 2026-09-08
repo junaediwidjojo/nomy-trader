@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "nomy-trader"
 version = "0.1.0"
-description = "Offline domain foundation for educational paper trading"
+description = "Offline domain foundation for educational buy-side recommendations"
 requires-python = ">=3.12"
 dependencies = ["pydantic>=2.10,<3"]
 

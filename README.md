@@ -8,10 +8,31 @@ Stop and target fields are advisory; profitability is not assumed.
 
 ## Current status
 
-The revised [ExecPlan](docs/plans/001-mvp-scope-revision.md) is awaiting approval.
-Partial offline domain code from the preceding scope exists but has not been
-accepted or fully verified. Implementation is paused; do not treat it as a
-working recommendation pipeline. Resume from the ExecPlan checklist after approval.
+The [ExecPlan](docs/plans/001-mvp-scope-revision.md) is approved. Milestone 1
+provides immutable recommendation contracts, complete-plan/policy validation,
+and offline scenarios. Broker models and reconciliation are removed from active
+code; the original implementation remains in Git history. SQLite, FMP, AI and
+Telegram integrations are still pending. Resume at the first unchecked step.
+
+## Run the offline foundation
+
+Install Python 3.12+ and uv, then run:
+
+```sh
+uv sync --locked
+uv run python -m nomy_trader.scenarios
+uv run ruff format --check .
+uv run ruff check .
+uv run mypy src
+uv run pytest
+```
+
+Pydantic validates immutable external contracts. pytest checks behavior, Ruff
+formats/lints Python, mypy checks types, and Hatchling builds the package. Exact
+versions are in uv.lock. Scenarios require no services or credentials. All
+prices, risk budgets and thresholds in fixtures are explicitly hypothetical;
+no production risk configuration is supplied. Scenario health checks validate
+rejection behavior, not real quota persistence or Telegram recovery.
 
 Read AGENTS.md, PLANS.md, then docs/PRODUCT_SPEC.md, TRADING_POLICY.md,
 ARCHITECTURE.md, DATA_MODEL.md, EVALUATION.md and ROADMAP.md. Numeric policy TBDs

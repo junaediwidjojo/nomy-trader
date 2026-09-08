@@ -1,1 +1,1 @@
-"""Educational paper-trading contracts; no execution capability."""
+"""Educational recommendation contracts; no execution capability."""
