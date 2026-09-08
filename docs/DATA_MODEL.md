@@ -47,4 +47,10 @@ Portfolio applicability is explicitly `unavailable`, following user decision.
 Notification status has no trade-state semantics. Current recommendation
 validation requires evidence retrieval before analysis; historical context
 validation may accept later archival retrieval with earlier proven availability.
-Persistence/append-only database enforcement remains the next milestone.
+SQLite migrations 001/002 now enforce immutable source/plan/recommendation and
+attempt records with triggers. The outbox is mutable for later worker status.
+Atomic journal writes validate context and persist full plan/sizing JSON before
+creating a pending intent. Read helpers reconstruct typed recommendations.
+Quota reservations are immutable, serialized and retained across restart; explicit
+reset windows are caller-supplied pending provider verification. Market-cache and
+scan tables exist; adapter ingestion and notification dispatch are still pending.

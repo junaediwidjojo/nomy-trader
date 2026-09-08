@@ -1,7 +1,7 @@
 # nomy-trader — FMP and Telegram recommendation MVP ExecPlan
 
 Status: implementation approved by user on 2026-09-08. Recommendation-domain
-foundation complete; persistence milestone next. Unspecified policy values remain unset. This supersedes 001-domain-contracts.md for active
+foundation and SQLite persistence milestones complete; S09 awaits FMP credentials. Unspecified policy values remain unset. This supersedes 001-domain-contracts.md for active
 work. The ten numbered sections below follow PLANS.md.
 
 ## 1. Goal and user-visible outcome
@@ -207,10 +207,23 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
   and outbox in one transaction. Conflicting immutable identities fail. Five
   storage tests pass, including injected outbox failure rollback, repeated
   intent and reopen durability. Mypy and Ruff pass. No send adapter exists.
-- [ ] S08: Add quota/cache/scan-run migration and persistent reservation API;
+- [x] S08: Add quota/cache/scan-run migration and persistent reservation API;
   test restart accounting and configured reset boundary.
+  Completed: migration 002 adds immutable quota/cache/scan records. QuotaWindow
+  requires explicit provider reset boundaries/call limit. BEGIN IMMEDIATE
+  serializes reservations; no refunds on failure. Tests prove restart usage,
+  explicit reset, overlapping-window rejection and 8 callers sharing 2 calls.
+  Full milestone verification: 75 tests, 12 scenarios, uv locked sync, Ruff
+  format/check and mypy all pass on Python 3.14.6 (offline). Cache ingestion
+  and scan recording are intentionally deferred to their adapter steps.
 - [ ] S09: Verify FMP account endpoint/field entitlements with minimal sanitized
   requests; record actual quota cost and freshness. Stop if D01 is unsatisfied.
+  Resume: not started. FMP_API_KEY was absent and no local .env existed at
+  checkpoint. User must provision a key locally (never paste it into chat).
+  Once available, make a minimal read-only entitlement request with sanitized
+  output; verify losers/screener, quote/history fields and quota semantics.
+  No authenticated FMP request or Telegram send has occurred. S10+ not started.
+  Do not proceed with assumed endpoint access or spend a paid subscription.
 - [ ] S10: Implement FMP HTTP wrapper with typed response models and redaction;
   test malformed payload, authentication, timeout and server failures offline.
 - [ ] S11: Implement losers/screener discovery and rate-limit handling through
@@ -350,3 +363,13 @@ not actual capital or a recommendation to invest that amount. S19 will implement
 quantity selection; fixtures currently supply arithmetic for validation only.
 Stop-based loss is not a maximum loss guarantee (gaps/slippage/fees apply).
 D05 approved: portfolio limits unavailable; no portfolio enforcement claims.
+
+Current resume checkpoint (2026-09-08): S01–S08 complete and individually
+committed. Git is initialized; earlier no-Git inventory above is historical.
+Recent milestones: a0f7311 S03, 502216c S04, 4f63a4f S05, d7be45f S06,
+1f88bd3 S07; use git log for the S08 commit containing this note. Fresh session:
+run the listed verification commands, provision FMP_API_KEY and resume S09.
+Outstanding non-credential decisions: D02 discovery thresholds/dedup/freshness,
+D03 scheduling/reset budget, D06 valuation/exit parameters, D07 evidence/model
+selection, and remaining D08 destination/expiry/retry settings. D04 has only a
+hypothetical educational reference; D05 unavailable portfolio limits is approved.
