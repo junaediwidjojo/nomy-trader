@@ -40,7 +40,9 @@ remain unresolved. Original IBKR automation specifications are preserved under
 [historical design](docs/archive/ibkr-design/README.md) for possible future work.
 
 SQLAlchemy Core supplies transactional SQLite access; Alembic supplies versioned
-schema upgrades. These dependencies implement the approved persistence milestone.
+schema upgrades. `httpx` provides the bounded FMP HTTP client and
+`python-dotenv` loads the ignored local `.env`; neither logs or persists the API
+key. These dependencies implement the approved persistence and FMP milestones.
 
 ## Resume checkpoint
 

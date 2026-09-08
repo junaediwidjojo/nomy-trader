@@ -231,8 +231,15 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
   printed. D01 is satisfied for end-of-day discovery/recheck only; spread/halt
   access and intraday freshness remain unavailable and must block any policy
   requiring them. No Telegram send occurred.
-- [ ] S10: Implement FMP HTTP wrapper with typed response models and redaction;
+- [x] S10: Implement FMP HTTP wrapper with typed response models and redaction;
   test malformed payload, authentication, timeout and server failures offline.
+  Completed: `providers.fmp` loads the local ignored `.env`, exposes typed
+  biggest-losers/quote/EOD-history calls and keeps the key out of exceptions and
+  representations. Ten fixture-transport tests cover payload validation,
+  auth/429/server errors and timeouts. A 2026-09-08 live adapter smoke check
+  returned 50 candidates using the local key; no symbol or secret was logged.
+  `httpx` provides bounded HTTP transport; `python-dotenv` makes the documented
+  local `.env` setup work. S11 must consume quota reservations before each call.
 - [ ] S11: Implement losers/screener discovery and rate-limit handling through
   the quota API; test pagination caps, 429 and budget exhaustion.
 - [ ] S12: Implement entitled quote/history enrichment and cache freshness;
