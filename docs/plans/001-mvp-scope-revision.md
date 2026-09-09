@@ -706,17 +706,33 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     deliberately configured; do not disable TLS verification to work around the
     Polymarket error.
   - [ ] S17c: Run the immediate manual analysis session in this order:
-    - [ ] Re-run the local Ajaib filter and record the exact snapshot revision,
+    - [x] Re-run the local Ajaib filter and record the exact snapshot revision,
       criteria and resulting symbols.
+      Completed 2026-09-09: snapshot `ajaib-20260909T083116Z` produced BRZE,
+      OI, INFY and HPQ using price >$5, market cap >$100M, one-day <=-1% and
+      one-week <=-3%.
     - [ ] Retrieve filing metadata for each candidate through SEC EDGAR; select
       a bounded, relevant current filing for primary-source review.
+      Partial: SEC metadata was retrieved for BRZE, OI and HPQ. INFY returned
+      no SEC metadata, consistent with its foreign issuer status, so its primary
+      source must be obtained from its issuer/exchange disclosure channel. No
+      filing document has been retrieved or assessed yet.
     - [ ] Build a cited evidence packet and apply the deterministic hard-block
       gate. Reject candidates lacking an explainable event or required evidence.
     - [ ] Run one isolated, one-round TradingAgents/Fireworks comparison only
       for each gate survivor. Preserve its output outside nomy-trader's SQLite;
       treat it as untrusted supplementary commentary.
+      Partial: the Reddit-free `market`/`fundamentals` configuration was started
+      for all four symbols but produced no result files within the bounded
+      window, and was stopped. A prior BRZE run reached `REVIEW` with empty
+      analyst reports, which is not evidence and cannot be used. Profile and
+      add a per-node timeout before another four-symbol attempt.
     - [ ] Recheck each survivor with the independently configured quote source.
       If quote freshness/coverage is insufficient, do not state an entry price.
+      Partial: Twelve Data observed 2026-09-08 13:30 UTC reference closes of
+      BRZE $30.31, OI $6.75, INFY $11.13 and HPQ $31.17. These are stale relative
+      to the analysis date and limited-venue references, so they cannot support
+      an entry price.
     - [ ] Produce the `REJECT`/`WATCH`/`MANUAL_BUY_CANDIDATE` report. A manual
       buy candidate must state supporting and opposing evidence, uncertainty,
       a maximum entry only if deterministically supported, and why it remains
