@@ -10,7 +10,8 @@ size and executes elsewhere. The application never learns whether they bought.
 
 ## Workflow
 
-1. Discover candidates with FMP's losers/screener endpoint (new Option A).
+1. Discover candidates with FMP's losers/screener endpoint (new Option A), then
+   require a current Ajaib U.S.-stock catalogue match before further work.
 2. Recompute deterministic liquidity, decline, volatility and freshness filters
    from FMP quote/volume/history data within the verified free-tier budget.
 3. Collect time-bounded news, disclosures and company/market context.
@@ -30,6 +31,16 @@ fill capture. Stop/target fields are not installed protection. Delivery cannot
 imply a purchase; the system cannot enforce user execution size or price.
 Risk checks concern the recommendation and explicitly available inputs only;
 unavailable portfolio limits require a recorded decision before release.
+
+## Ajaib availability boundary
+
+The user manually trades through Ajaib. Ajaib's U.S. catalogue is a selected,
+changing subset of U.S. listings, so a U.S. ticker alone is insufficient. A
+candidate must match a dated, immutable Ajaib catalogue snapshot before it can
+pass discovery. A missing, expired or ambiguous match rejects the candidate; the
+application must not imply that an instrument is tradeable in the user's account.
+This is an availability gate only, not a broker integration, account query or
+order capability.
 
 MVP acceptance: budget-safe discovery; complete validated logged plans; reliable,
 recoverable outbound delivery with honest failure status; useful full-plan

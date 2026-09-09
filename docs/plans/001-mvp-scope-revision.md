@@ -118,6 +118,15 @@ with each scan. FMP losers are intersected with this list and then checked again
 the >$5 discovery price floor. List maintenance/review cadence remains an open
 release decision. Missing liquidity/spread requirements still prevent eligibility.
 
+2026-09-09 execution-venue decision: the user trades manually through Ajaib,
+whose U.S.-stock selection is a changing subset of listed U.S. securities.
+Treat Ajaib availability as a mandatory, fail-closed discovery gate. Do not add
+a broker connection or scrape/login to the user's account. Build a dated,
+manually reviewable catalogue snapshot from Ajaib's published list or explicit
+in-app user confirmation; preserve its source URL/retrieval time and revision
+with each scan. A ticker absent from, ambiguous in, or older than the approved
+snapshot stops before evidence/analysis.
+
 Persist a quota ledger; reserve a call before making it and conservatively count
 failed/ambiguous requests. All FMP consumers share this ledger, including retries,
 evidence and optional benchmarking calls. Gate each scan by remaining budget:
@@ -442,6 +451,13 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     AVGO, LLY, MA, ORCL, HD, PG, MRK, CRM, ACN, MCD, IBM, CAT, NOW, TMO, PM,
     QCOM, AMGN, TXN, SPGI, BKNG, ISRG and ADP after FMP returned unusable
     history. No threshold, eligibility, plan or notification was produced.
+  - [ ] S13m-e: Add typed, immutable Ajaib catalogue-snapshot contracts and a
+    manually reviewable local source file. Require catalogue provenance,
+    retrieval time and unambiguous U.S.-stock symbol match; test absent, expired
+    and duplicate matches reject discovery. No account access or broker API.
+  - [ ] S13m-f: Intersect raw manual-universe observations with a current Ajaib
+    snapshot and persist match/snapshot revision. Test no-match and stale
+    snapshot behavior; present availability separately from any investment claim.
 - [ ] S14: Implement event deduplication across scans and restarts; test repeats
   and materially new events under approved deduplication rules.
 - [ ] S15: Implement approved evidence-provider wrapper and immutable provenance;
