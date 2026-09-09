@@ -696,7 +696,15 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     this can make a run appear hung. Next action: profile the remaining nodes
     with request timeouts, or run a smaller explicitly approved comparison that
     disables Reddit and other unavailable sources; do not retry the full graph
-    blindly.
+    blindly. The user approved the smaller run on 2026-09-09: construct the
+    graph with `selected_analysts=("market", "news", "fundamentals")`, which
+    omits the social analyst and therefore makes no Reddit requests. That run
+    passed the Reddit stage, then reported two independent optional-source
+    failures: no `FRED_API_KEY` for macro indicators, and a TLS hostname
+    verification failure for Polymarket's Gamma API. The next reduced run must
+    use `selected_analysts=("market", "fundamentals")` until those sources are
+    deliberately configured; do not disable TLS verification to work around the
+    Polymarket error.
   - [ ] S17c: Run the immediate manual analysis session in this order:
     - [ ] Re-run the local Ajaib filter and record the exact snapshot revision,
       criteria and resulting symbols.
