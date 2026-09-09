@@ -10,8 +10,9 @@ size and executes elsewhere. The application never learns whether they bought.
 
 ## Workflow
 
-1. Discover candidates with FMP's losers/screener endpoint (new Option A), then
-   require a current Ajaib U.S.-stock catalogue match before further work.
+1. Discover candidates with FMP's biggest-losers endpoint, then require a match
+   in the local Ajaib U.S.-stock catalogue before further work. Ajaib one-day
+   change is retained as snapshot context only, never the daily trigger.
 2. Recompute deterministic liquidity, decline, volatility and freshness filters
    from FMP quote/volume/history data within the verified free-tier budget.
 3. Collect time-bounded news, disclosures and company/market context.

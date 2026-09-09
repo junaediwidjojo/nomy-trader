@@ -135,6 +135,13 @@ evidence rejecting bankruptcy, delisting/halt, going-concern and material
 dilution concerns. Lookback periods and quantitative financial-health tests
 remain open decisions; absent evidence fails closed.
 
+2026-09-09 discovery revision: FMP is the daily decline source. Make one
+quota-reserved FMP biggest-losers request, intersect it with the imported local
+Ajaib catalogue and use FMP daily history to validate the resulting shortlist.
+Do not require a new Ajaib crawl each day. This is deliberately incomplete
+coverage: the FMP-ranked feed can omit an Ajaib-listed stock with a smaller
+decline, and no code may claim full-universe scanning on the free plan.
+
 Availability-source feasibility: Ajaib's public catalogue is visibly paginated
 through 66 pages and exposes symbol, price, change and market-cap values in the
 browser-rendered view. A normal unattended HTTP request was blocked by Ajaib's
@@ -499,6 +506,15 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
   - [ ] S13m-f: Intersect raw manual-universe observations with a current Ajaib
     snapshot and persist match/snapshot revision. Test no-match and stale
     snapshot behavior; present availability separately from any investment claim.
+    Revision: replace Ajaib one-day-change ranking with FMP biggest-losers
+    discovery intersected against the imported local catalogue. Preserve the
+    one-request FMP quota cost and clearly record that the ranked feed is not
+    complete universe coverage.
+    Resume: `discover_biggest_losers` now accepts an Ajaib catalogue revision,
+    intersects FMP candidates after reservation and records the revision with the
+    raw/filtered scan. Five fixture tests, Ruff and mypy pass. Next action: use
+    the imported 532-symbol SQLite catalogue in one live FMP scan and record the
+    filtered outcome; do not use the legacy 137-symbol JSON file.
 - [ ] S14: Implement event deduplication across scans and restarts; test repeats
   and materially new events under approved deduplication rules.
 - [ ] S15: Implement approved evidence-provider wrapper and immutable provenance;

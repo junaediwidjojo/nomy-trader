@@ -10,6 +10,7 @@ from nomy_trader.providers.fmp import FmpClient, Loser
 from nomy_trader.storage import schema
 from nomy_trader.storage.quota import QuotaWindow, reserve
 
+from .ajaib_catalog import AjaibCatalogSnapshot
 from .universe import ManualUniverse, shortlist
 
 
@@ -19,6 +20,7 @@ def discover_biggest_losers(
     quota_window: QuotaWindow,
     now: datetime,
     manual_universe: ManualUniverse | None = None,
+    ajaib_catalog: AjaibCatalogSnapshot | None = None,
 ) -> tuple[Loser, ...]:
     """Reserve the discovery call, retrieve candidates, then persist the result.
 
@@ -32,6 +34,12 @@ def discover_biggest_losers(
     reservation_id = reserve(engine, quota_window, now)
     losers = client.biggest_losers()
     candidates = shortlist(losers, manual_universe) if manual_universe else losers
+    if ajaib_catalog:
+        candidates = tuple(
+            candidate
+            for candidate in candidates
+            if ajaib_catalog.accepts(candidate.symbol)
+        )
     payload = {
         "kind": "fmp_biggest_losers",
         "reservation_id": reservation_id,
@@ -48,6 +56,8 @@ def discover_biggest_losers(
             "policy": manual_universe.policy.model_dump(mode="json"),
             "limitation": manual_universe.limitation,
         }
+    if ajaib_catalog:
+        payload["ajaib_catalog_revision"] = ajaib_catalog.revision
     with engine.begin() as connection:
         connection.execute(
             schema.scan_runs.insert().values(

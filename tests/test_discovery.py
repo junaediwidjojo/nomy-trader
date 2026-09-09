@@ -5,6 +5,7 @@ import httpx
 import pytest
 import sqlalchemy as sa
 
+from nomy_trader.market.ajaib_catalog import load_ajaib_catalog
 from nomy_trader.market.discovery import discover_biggest_losers
 from nomy_trader.market.universe import load_manual_universe
 from nomy_trader.providers.fmp import FmpClient, FmpRateLimitError
@@ -108,4 +109,15 @@ def test_discovery_logs_raw_and_manual_universe_shortlist(tmp_path):
     assert '"raw_candidate_count": 1' in payload
     assert '"candidate_count": 0' in payload
     assert universe.revision in payload
+    engine.dispose()
+
+
+def test_discovery_intersects_ajaib_catalogue(tmp_path):
+    engine = open_database(tmp_path / "journal.sqlite")
+    upgrade(engine)
+    catalog = load_ajaib_catalog(Path("config/ajaib_catalog_snapshot.json"))
+    results = discover_biggest_losers(
+        engine, fmp(), window(), AT, ajaib_catalog=catalog
+    )
+    assert results == ()
     engine.dispose()
