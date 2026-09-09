@@ -515,6 +515,11 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     >$5/>$100M catalogue members under revision `ajaib-20260909T074453Z`.
     It made no network request, common-stock classification, decline claim,
     recommendation or notification.
+    Latest import: 2026-09-09 local SQLite import accepted the newer supplied
+    `APPROVED/OK` response with 862 entries and derived 608 >$5/>$100M working
+    symbols under revision `ajaib-20260909T083116Z`. Its one-day, one-week and
+    one-month price fields are retained as source data but are not yet used by a
+    discovery or reversal-hint rule.
   - [ ] S13m-f: Intersect raw manual-universe observations with a current Ajaib
     snapshot and persist match/snapshot revision. Test no-match and stale
     snapshot behavior; present availability separately from any investment claim.
@@ -555,6 +560,16 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     Test boundary values and make clear that a hint cannot produce a plan or a
     Telegram notification without all downstream eligibility, evidence, analyst
     and risk checks.
+  - [ ] S13m-j: Provide a documented, local-only input location for a manually
+    supplied Ajaib US-stock response and an explicit import command. The command
+    must validate the complete response and write a new immutable SQLite
+    revision; it must make no network request. Test invalid/missing input and
+    document that the ignored local file is not committed.
+    Resume: `config/private_ajaib_us_stock.json` is the designated ignored
+    location. The 2026-09-09 user-supplied 862-record response includes
+    `price_1_day`, `price_1_week` and `price_1_month`; import it before adding
+    any use of those fields. S13m-h/i remain required before it replaces FMP
+    discovery or creates reversal hints.
 - [ ] S14: Implement event deduplication across scans and restarts; test repeats
   and materially new events under approved deduplication rules.
 - [ ] S15: Implement approved evidence-provider wrapper and immutable provenance;
