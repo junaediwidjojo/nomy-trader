@@ -1,6 +1,7 @@
 """Bounded read-only SEC EDGAR filing-metadata client."""
 
 from datetime import UTC, datetime
+from hashlib import sha256
 from time import monotonic, sleep
 from typing import Any
 
@@ -23,6 +24,17 @@ class SecFiling(BaseModel):
     accession_number: Text
     primary_document: Text
     document_url: Text
+
+
+class SecDocument(BaseModel):
+    """Bounded primary filing content with retrieval and integrity facts."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    filing: SecFiling
+    retrieved_at: datetime
+    content_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    content: str = Field(min_length=1)
 
 
 class _TickerFile(BaseModel):
@@ -58,6 +70,7 @@ class SecEdgarClient:
 
     ticker_url = "https://www.sec.gov/files/company_tickers_exchange.json"
     submissions_base_url = "https://data.sec.gov/submissions"
+    max_document_bytes = 2_000_000
 
     def __init__(
         self, user_agent: str, *, transport: httpx.BaseTransport | None = None
@@ -145,6 +158,31 @@ class SecEdgarClient:
             if len(filings) == limit:
                 break
         return tuple(filings)
+
+    def retrieve_document(self, filing: SecFiling) -> SecDocument:
+        """Retrieve one bounded primary document; content remains untrusted data."""
+        try:
+            wait_seconds = self._next_request_at - monotonic()
+            if wait_seconds > 0:
+                sleep(wait_seconds)
+            response = self._client.get(filing.document_url)
+            self._next_request_at = monotonic() + 1.0
+            response.raise_for_status()
+        except httpx.HTTPError as error:
+            raise SecEdgarError("SEC document request failed") from error
+        content = response.content
+        if len(content) > self.max_document_bytes:
+            raise SecEdgarError("SEC document exceeds configured size limit")
+        try:
+            decoded = content.decode("utf-8")
+        except UnicodeDecodeError as error:
+            raise SecEdgarError("SEC document is not UTF-8 text") from error
+        return SecDocument(
+            filing=filing,
+            retrieved_at=datetime.now(UTC),
+            content_hash=sha256(content).hexdigest(),
+            content=decoded,
+        )
 
     def _get_json(self, url: str) -> object:
         try:

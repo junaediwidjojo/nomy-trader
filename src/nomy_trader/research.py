@@ -6,6 +6,7 @@ from pydantic import Field, model_validator
 
 from nomy_trader.domain.models import Contract, Evidence, References, Text, Timestamp
 from nomy_trader.domain.validation import unique_facts
+from nomy_trader.providers.sec_edgar import SecDocument
 
 
 class ObservationStatus(StrEnum):
@@ -113,3 +114,24 @@ def validate_review(review: CitedReview, packet: EvidencePacket) -> None:
     available_ids = {item.id for item in packet.evidence}
     if not set(review.evidence_ids).issubset(available_ids):
         raise ValueError("review cites evidence outside packet")
+
+
+def evidence_from_sec_document(event_id: str, document: SecDocument) -> Evidence:
+    """Preserve SEC provenance without treating filing content as instructions."""
+    filing = document.filing
+    return Evidence(
+        id=f"sec:{filing.accession_number}:{filing.primary_document}",
+        event_id=event_id,
+        kind=f"sec_{filing.form.lower().replace('-', '_')}",
+        source="SEC EDGAR",
+        publisher="SEC EDGAR",
+        published_at=filing.filed_at,
+        retrieved_at=document.retrieved_at,
+        version_available_at=filing.filed_at,
+        availability_proof=(
+            f"SEC accession {filing.accession_number}; {filing.document_url}"
+        ),
+        content_hash=document.content_hash,
+        content_or_licensed_reference=document.content,
+        primary=True,
+    )

@@ -78,7 +78,7 @@ persistence/API adapters wait until the pure core passes.
 
 ## 7. Ordered implementation steps
 
-- [ ] P01: Define fixture cases for temporary event, structural risk, no event,
+- [x] P01: Define fixture cases for temporary event, structural risk, no event,
   stale market data, positive/negative TradingAgents challenge and malformed
   review.
 - [x] P02: Add valuation input and deterministic price-signal contracts; reject
@@ -92,7 +92,7 @@ persistence/API adapters wait until the pure core passes.
   `MANUAL_BUY_CANDIDATE`; test every block and conflict path.
 - [x] P07: Add JSON fixture CLI output showing every stage, assumption, price
   signal and limitation without provider calls.
-- [ ] P08: Integrate approved SEC document/evidence retrieval and a fresh market
+- [x] P08: Integrate approved SEC document/evidence retrieval and a fresh market
   provider, preserving timestamps and source revisions.
 - [ ] P09: Add a timeout-bounded TradingAgents adapter that receives only
   curated facts and records a report hash; never invoke its raw graph in the

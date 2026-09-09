@@ -5,6 +5,8 @@ import pytest
 from pydantic import ValidationError
 
 from nomy_trader.research import (
+    BusinessRiskKind,
+    BusinessRiskObservation,
     ObservationStatus,
     evaluate_business_gate,
 )
@@ -138,6 +140,52 @@ def test_composed_outcome_is_conservative() -> None:
     assert candidate.status == SignalOutcomeStatus.MANUAL_BUY_CANDIDATE
     assert challenged.status == SignalOutcomeStatus.WATCH
     assert rejected.status == SignalOutcomeStatus.REJECT
+
+
+def test_structural_risk_and_missing_event_are_rejected() -> None:
+    clean_packet = packet()
+    structural_packet = clean_packet.model_copy(
+        update={
+            "observations": tuple(
+                BusinessRiskObservation(
+                    kind=observation.kind,
+                    status=(
+                        ObservationStatus.PRESENT
+                        if observation.kind == BusinessRiskKind.GOING_CONCERN
+                        else observation.status
+                    ),
+                    evidence_ids=observation.evidence_ids,
+                    assessed_at=observation.assessed_at,
+                )
+                for observation in clean_packet.observations
+            )
+        }
+    )
+
+    structural = evaluate_business_gate(structural_packet)
+    no_event = evaluate_business_gate(packet(ObservationStatus.UNKNOWN))
+
+    assert structural.blocking_reasons == ("going_concern_present",)
+    assert no_event.blocking_reasons == ("event_explanation_missing_or_unresolved",)
+
+
+def test_malformed_review_and_unavailable_review_cannot_promote() -> None:
+    with pytest.raises(ValidationError, match="requires report hash"):
+        review(report_hash=None)
+
+    outcome = compose_signal_outcome(
+        evaluate_business_gate(packet()),
+        evaluate_market_gate(market_confirmation()),
+        review(
+            status=TradingAgentsReviewStatus.UNAVAILABLE,
+            summary="The provider timed out before returning a report.",
+            report_hash=None,
+            evidence_ids=(),
+        ),
+    )
+
+    assert outcome.status == SignalOutcomeStatus.WATCH
+    assert outcome.reasons == ("tradingagents_review_unavailable",)
 
 
 def test_offline_workflow_requires_consistent_cited_stages() -> None:
