@@ -430,9 +430,15 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     than the two required rows, so each call is capped to one symbol and only
     the two latest dated entries are retained in the raw scan result. Provider
     dashboard billing remains unverified; local accounting records three calls.
-  - [ ] S13m-d: Run one 47-symbol, quota-reserved raw-return scan of the seed
+  - [x] S13m-d: Run one 47-symbol, quota-reserved raw-return scan of the seed
     universe. Present the observed declines without a panic threshold, and log
     all rejected/stale symbols. Do not label any result eligible or send it.
+    Completed: 2026-09-09 scan made 47 local quota reservations and produced 25
+    fresh 2026-09-08 observations. Largest raw declines: ABBV -2.96%, JNJ
+    -2.22%, NVDA -2.01%, NFLX -1.89%, V -1.71%, JPM -1.43%. It safely rejected
+    AVGO, LLY, MA, ORCL, HD, PG, MRK, CRM, ACN, MCD, IBM, CAT, NOW, TMO, PM,
+    QCOM, AMGN, TXN, SPGI, BKNG, ISRG and ADP after FMP returned unusable
+    history. No threshold, eligibility, plan or notification was produced.
 - [ ] S14: Implement event deduplication across scans and restarts; test repeats
   and materially new events under approved deduplication rules.
 - [ ] S15: Implement approved evidence-provider wrapper and immutable provenance;
