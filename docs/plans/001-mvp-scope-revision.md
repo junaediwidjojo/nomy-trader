@@ -419,6 +419,13 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     size. If viable within the 250-call daily budget, calculate and persist raw
     one-session returns across the manual universe in small quota-reserved
     batches. Do not apply an abnormal-decline threshold until D02 is approved.
+    Resume: implementation and offline fixtures are complete in
+    `market.universe_scan`; each symbol reserves a quota call before FMP history
+    retrieval, rejects stale/incomplete history, calculates only raw one-session
+    return, and persists a scan record. Targeted Ruff, mypy and two fixture tests
+    pass. Next action: run a maximum-three-symbol live sample using the existing
+    `fmp-manual-2026-09-09` shared local quota window, then record its field
+    coverage/freshness and result. Do not scan all 47 until that succeeds.
 - [ ] S14: Implement event deduplication across scans and restarts; test repeats
   and materially new events under approved deduplication rules.
 - [ ] S15: Implement approved evidence-provider wrapper and immutable provenance;
