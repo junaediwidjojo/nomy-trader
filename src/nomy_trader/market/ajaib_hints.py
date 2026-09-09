@@ -2,12 +2,20 @@
 
 import json
 from datetime import UTC, datetime
+from decimal import Decimal
 from uuid import uuid4
 
 from pydantic import Field
 from sqlalchemy import Engine
 
-from nomy_trader.domain.models import Contract, Finite, Positive, Text, Timestamp
+from nomy_trader.domain.models import (
+    Contract,
+    Finite,
+    Nonnegative,
+    Positive,
+    Text,
+    Timestamp,
+)
 from nomy_trader.market.ajaib_catalog import (
     _RawInstrument,
     load_latest_imported_snapshot_and_response,
@@ -32,12 +40,45 @@ class AjaibHintRejection(Contract):
     reasons: tuple[Text, ...] = Field(min_length=1)
 
 
+class PriorityPolicy(Contract):
+    """Versioned, explainable ordering policy for already eligible hints."""
+
+    version: Text
+    one_day_weight: Nonnegative
+    one_month_weight: Nonnegative
+    one_month_floor: Finite
+    one_month_context_cap_fraction: Nonnegative
+
+
+DEFAULT_PRIORITY_POLICY = PriorityPolicy(
+    version="ajaib-priority-v1",
+    one_day_weight=Decimal("1.0"),
+    one_month_weight=Decimal("0.25"),
+    one_month_floor=Decimal("-10.0"),
+    one_month_context_cap_fraction=Decimal("0.25"),
+)
+
+
+class PriorityBreakdown(Contract):
+    one_day_severity: Nonnegative
+    one_month_reversal_context: Nonnegative
+    total: Nonnegative
+
+
+class RankedAjaibHint(Contract):
+    rank: int = Field(strict=True, gt=0)
+    hint: AjaibReversalHint
+    breakdown: PriorityBreakdown
+
+
 class AjaibReversalHintScan(Contract):
     observed_at: Timestamp
     catalogue_revision: Text
     catalogue_retrieved_at: Timestamp
     source_entries: int = Field(gt=0)
     candidates: tuple[AjaibReversalHint, ...]
+    priority_policy: PriorityPolicy
+    ranked_candidates: tuple[RankedAjaibHint, ...]
     rejections: tuple[AjaibHintRejection, ...]
     limitation: Text
 
@@ -74,12 +115,19 @@ def run_reversal_hint_scan(engine: Engine, now: datetime) -> AjaibReversalHintSc
                 ),
             )
         )
+    ordered_candidates = tuple(
+        sorted(candidates, key=lambda item: item.one_day_percent)
+    )
     scan = AjaibReversalHintScan(
         observed_at=now,
         catalogue_revision=snapshot.revision,
         catalogue_retrieved_at=snapshot.retrieved_at,
         source_entries=raw.result.count,
-        candidates=tuple(sorted(candidates, key=lambda item: item.one_day_percent)),
+        candidates=ordered_candidates,
+        priority_policy=DEFAULT_PRIORITY_POLICY,
+        ranked_candidates=rank_reversal_hints(
+            ordered_candidates, DEFAULT_PRIORITY_POLICY
+        ),
         rejections=tuple(rejections),
         limitation=(
             "Research hint only: no liquidity, spread, business validity, news, "
@@ -94,6 +142,42 @@ def run_reversal_hint_scan(engine: Engine, now: datetime) -> AjaibReversalHintSc
             )
         )
     return scan
+
+
+def rank_reversal_hints(
+    candidates: tuple[AjaibReversalHint, ...], policy: PriorityPolicy
+) -> tuple[RankedAjaibHint, ...]:
+    """Rank eligible hints without altering eligibility or filling missing values."""
+    if len({candidate.symbol for candidate in candidates}) != len(candidates):
+        raise ValueError("ranked candidates must have unique symbols")
+    scored: list[tuple[AjaibReversalHint, PriorityBreakdown]] = []
+    for candidate in candidates:
+        severity = max(Decimal("0"), -candidate.one_day_percent) * policy.one_day_weight
+        context = Decimal("0")
+        if candidate.one_month_percent is not None:
+            raw_context = (
+                max(Decimal("0"), candidate.one_month_percent - policy.one_month_floor)
+                * policy.one_month_weight
+            )
+            context = min(
+                raw_context,
+                severity * policy.one_month_context_cap_fraction,
+            )
+        scored.append(
+            (
+                candidate,
+                PriorityBreakdown(
+                    one_day_severity=severity,
+                    one_month_reversal_context=context,
+                    total=severity + context,
+                ),
+            )
+        )
+    ordered = sorted(scored, key=lambda item: (-item[1].total, item[0].symbol))
+    return tuple(
+        RankedAjaibHint(rank=index, hint=candidate, breakdown=breakdown)
+        for index, (candidate, breakdown) in enumerate(ordered, start=1)
+    )
 
 
 def _rejection_reasons(instrument: _RawInstrument) -> tuple[str, ...]:

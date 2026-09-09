@@ -62,6 +62,12 @@ def main() -> int:
         default=Path("config/private_ajaib_us_stock.json"),
         help="Complete manually supplied Ajaib JSON response for ajaib-import",
     )
+    parser.add_argument(
+        "--top",
+        type=int,
+        default=20,
+        help="Number of ranked Ajaib hints to print (default: 20)",
+    )
     args = parser.parse_args()
     load_dotenv(Path.cwd() / ".env", override=False)
     key = os.getenv("MASSIVE_API_KEY", "")
@@ -138,22 +144,44 @@ def main() -> int:
             )
             return 0
         if args.command == "ajaib-hints":
+            if args.top < 1:
+                print("--top must be positive")
+                return 1
             scan = run_reversal_hint_scan(engine, datetime.now(UTC))
             print(
                 f"RESEARCH_HINTS {len(scan.candidates)} of {scan.source_entries} "
                 f"from {scan.catalogue_revision}"
             )
-            for candidate in scan.candidates:
+            policy = scan.priority_policy
+            print(
+                "PRIORITY_POLICY "
+                f"{policy.version} | one-day x{policy.one_day_weight} | "
+                f"one-month x{policy.one_month_weight} above "
+                f"{policy.one_month_floor}%, capped at "
+                f"{policy.one_month_context_cap_fraction}x daily severity"
+            )
+            for ranked in scan.ranked_candidates[: args.top]:
+                candidate = ranked.hint
                 month = (
                     str(candidate.one_month_percent)
                     if candidate.one_month_percent is not None
                     else "unavailable"
                 )
                 print(
-                    f"{candidate.symbol} | ${candidate.price} | "
+                    f"#{ranked.rank} {candidate.symbol} | "
+                    f"score {ranked.breakdown.total} "
+                    f"(day {ranked.breakdown.one_day_severity}, "
+                    f"month {ranked.breakdown.one_month_reversal_context}) | "
+                    f"${candidate.price} | "
                     f"1d {candidate.one_day_percent}% | "
                     f"1w {candidate.one_week_percent}% | "
                     f"1m {month}%"
+                )
+            if len(scan.ranked_candidates) > args.top:
+                print(
+                    f"Showing {args.top} of {len(scan.ranked_candidates)} "
+                    "ranked hints; "
+                    "the full ranking is saved in SQLite."
                 )
             print(scan.limitation)
             return 0
