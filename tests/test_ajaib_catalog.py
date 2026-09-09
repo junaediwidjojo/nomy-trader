@@ -51,11 +51,11 @@ def test_reversal_hints_require_all_approved_boundaries_and_log_rejections(tmp_p
     source.write_text(
         '{"err_message":"APPROVED/OK","result":{"count":3,"results":['
         '{"code":"HINT","name":"Hint","price":6,"market_cap":100000001,'
-        '"price_1_day":{"pct_change":-5},'
-        '"price_1_week":{"pct_change":-3},'
+        '"price_1_day":{"pct_change":-2},'
+        '"price_1_week":{"pct_change":-4},'
         '"price_1_month":{"pct_change":0.01}},'
         '{"code":"DAY","name":"Day","price":6,"market_cap":100000001,'
-        '"price_1_day":{"pct_change":-4.99},'
+        '"price_1_day":{"pct_change":-1.99},'
         '"price_1_week":{"pct_change":-4},'
         '"price_1_month":{"pct_change":1}},'
         '{"code":"MONTH","name":"Month","price":6,"market_cap":100000001,'
@@ -72,7 +72,7 @@ def test_reversal_hints_require_all_approved_boundaries_and_log_rejections(tmp_p
 
     assert [hint.symbol for hint in scan.candidates] == ["HINT"]
     assert scan.rejections[0].symbol == "DAY"
-    assert "one_day_decline_not_at_least_5_percent" in scan.rejections[0].reasons
+    assert "one_day_decline_not_at_least_2_percent" in scan.rejections[0].reasons
     assert scan.rejections[1].symbol == "MONTH"
     assert "one_month_change_not_positive" in scan.rejections[1].reasons
     engine.dispose()

@@ -101,12 +101,12 @@ def _rejection_reasons(instrument: _RawInstrument) -> tuple[str, ...]:
         reasons.append("market_cap_not_above_100m")
     if instrument.price_1_day is None:
         reasons.append("missing_one_day_change")
-    elif instrument.price_1_day.pct_change > -5:
-        reasons.append("one_day_decline_not_at_least_5_percent")
+    elif instrument.price_1_day.pct_change > -2:
+        reasons.append("one_day_decline_not_at_least_2_percent")
     if instrument.price_1_week is None:
         reasons.append("missing_one_week_change")
-    elif instrument.price_1_week.pct_change > -3:
-        reasons.append("one_week_decline_not_at_least_3_percent")
+    elif instrument.price_1_week.pct_change > -4:
+        reasons.append("one_week_decline_not_at_least_4_percent")
     if instrument.price_1_month is None:
         reasons.append("missing_one_month_change")
     elif instrument.price_1_month.pct_change <= 0:
