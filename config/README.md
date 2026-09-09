@@ -61,3 +61,18 @@ the current Fireworks account and produces structured tool calls. The prior
 2,400-token cap allows report text after reasoning tokens. The integration must
 still verify a bounded sandbox run before it accepts output as supplementary
 research.
+
+The application exposes a `TradingAgentsSubprocessAdapter`, but it has no
+default command. A future local runner must receive a JSON request on standard
+input and return exactly this JSON shape on standard output:
+
+```json
+{"status":"SUPPORTS","summary":"Cited commentary.","evidence_ids":["evidence-id"]}
+```
+
+The status may instead be `CHALLENGES`. The adapter sets the process timeout,
+hashes the accepted response, verifies every evidence ID against the curated
+packet, and changes any failure to an unavailable review. Do not point this
+adapter at TradingAgents' raw graph until its Yahoo Finance fallback timeout is
+fixed; the raw graph may make provider requests outside the curated-facts
+boundary.

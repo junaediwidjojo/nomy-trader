@@ -94,7 +94,7 @@ persistence/API adapters wait until the pure core passes.
   signal and limitation without provider calls.
 - [x] P08: Integrate approved SEC document/evidence retrieval and a fresh market
   provider, preserving timestamps and source revisions.
-- [ ] P09: Add a timeout-bounded TradingAgents adapter that receives only
+- [x] P09: Add a timeout-bounded TradingAgents adapter that receives only
   curated facts and records a report hash; never invoke its raw graph in the
   recommendation path until its Yahoo fallback is fixed.
 - [ ] P10: Persist completed signals, add delivery later, and run full quality
