@@ -512,9 +512,14 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     complete universe coverage.
     Resume: `discover_biggest_losers` now accepts an Ajaib catalogue revision,
     intersects FMP candidates after reservation and records the revision with the
-    raw/filtered scan. Five fixture tests, Ruff and mypy pass. Next action: use
-    the imported 532-symbol SQLite catalogue in one live FMP scan and record the
-    filtered outcome; do not use the legacy 137-symbol JSON file.
+    raw/filtered scan. Five fixture tests, Ruff and mypy pass. Live check on
+    2026-09-09 used the imported 532-symbol SQLite catalogue and one FMP
+    biggest-losers request: 0 of the ranked 50 candidates matched. No candidate
+    or recommendation was produced. This does not show that none of the 532
+    stocks declined; it demonstrates the documented incomplete coverage of the
+    ranked global feed. Next action: obtain approval for a complete daily
+    universe source, or explicitly accept FMP as an extreme-move-only alert;
+    do not use the legacy 137-symbol JSON file.
 - [ ] S14: Implement event deduplication across scans and restarts; test repeats
   and materially new events under approved deduplication rules.
 - [ ] S15: Implement approved evidence-provider wrapper and immutable provenance;
