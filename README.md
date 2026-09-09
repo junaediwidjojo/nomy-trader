@@ -36,10 +36,10 @@ was 2026-09-08. No plan or recommendation was created.
    `FMP_API_KEY` as well. Never paste either key into chat or commit it.
 5. Resume S12t-b in the ExecPlan to verify actual candidate coverage before use.
 
-The typed Twelve Data quote adapter is implemented and covered by offline
-fixture tests. It has not yet made a live request or established persistent
-credit accounting. The free feed does not establish a consolidated bid/ask or
-executable price. Official pricing:
+The typed Twelve Data quote adapter and persistent 8-credit-per-minute,
+800-credit-per-day local reservation guard are implemented and covered by
+offline fixture tests. It has not yet made a live request. The free feed does
+not establish a consolidated bid/ask or executable price. Official pricing:
 https://twelvedata.com/pricing
 
 ## Offline verification

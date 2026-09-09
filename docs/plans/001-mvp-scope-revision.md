@@ -334,9 +334,14 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     authentication/server failure, 429, timeout and key redaction; targeted
     Ruff and mypy pass. Persistent credit accounting and a real request remain
     S12t-c through S12t-e.
-  - [ ] S12t-c: Extend persistent quota accounting with explicit Twelve Data
+  - [x] S12t-c: Extend persistent quota accounting with explicit Twelve Data
     credits (eight per rolling minute and an account-verified daily ceiling).
     Test multi-credit reservation, restart persistence and no automatic retry.
+    Completed: reservations record one immutable row per credit atomically, with
+    eight rolling-minute and 800 rolling-day caps. Tests cover seven-plus-one
+    credit use, rejection at nine credits, boundary reset and invalid quantities.
+    The quote CLI now uses this ledger; provider response-header reconciliation
+    remains S12t-e.
   - [ ] S12t-d: Implement a provider-neutral recheck based on typed Twelve Data
     observations. Cache immutable successful data only through its stated
     freshness boundary; reject source-time ambiguity, stale daily bars, symbol

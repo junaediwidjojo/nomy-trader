@@ -7,7 +7,7 @@ import pytest
 
 from nomy_trader.providers.massive import MassiveClient, MassiveError
 from nomy_trader.storage.database import open_database, upgrade
-from nomy_trader.storage.rate_limit import RateLimited, reserve_request
+from nomy_trader.storage.rate_limit import RateLimited, reserve_credits, reserve_request
 
 AT = datetime(2026, 9, 8, 12, tzinfo=UTC)
 
@@ -137,4 +137,17 @@ def test_rolling_rate_serializes_competing_callers(tmp_path):
 
     with ThreadPoolExecutor(max_workers=8) as pool:
         assert sum(pool.map(attempt, range(12))) == 5
+    engine.dispose()
+
+
+def test_twelve_data_credit_budgets_are_persistent(tmp_path):
+    engine = open_database(tmp_path / "rate.sqlite")
+    upgrade(engine)
+    reserve_credits(engine, "twelve_data", AT, credits=7)
+    reserve_credits(engine, "twelve_data", AT, credits=1)
+    with pytest.raises(RateLimited):
+        reserve_credits(engine, "twelve_data", AT, credits=1)
+    reserve_credits(engine, "twelve_data", AT + timedelta(seconds=60), credits=8)
+    with pytest.raises(ValueError):
+        reserve_credits(engine, "twelve_data", AT, credits=0)
     engine.dispose()
