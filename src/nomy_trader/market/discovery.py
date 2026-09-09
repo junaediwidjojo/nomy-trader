@@ -10,9 +10,15 @@ from nomy_trader.providers.fmp import FmpClient, Loser
 from nomy_trader.storage import schema
 from nomy_trader.storage.quota import QuotaWindow, reserve
 
+from .universe import ManualUniverse, shortlist
+
 
 def discover_biggest_losers(
-    engine: Engine, client: FmpClient, quota_window: QuotaWindow, now: datetime
+    engine: Engine,
+    client: FmpClient,
+    quota_window: QuotaWindow,
+    now: datetime,
+    manual_universe: ManualUniverse | None = None,
 ) -> tuple[Loser, ...]:
     """Reserve the discovery call, retrieve candidates, then persist the result.
 
@@ -25,13 +31,23 @@ def discover_biggest_losers(
     now = now.astimezone(UTC)
     reservation_id = reserve(engine, quota_window, now)
     losers = client.biggest_losers()
+    candidates = shortlist(losers, manual_universe) if manual_universe else losers
     payload = {
         "kind": "fmp_biggest_losers",
         "reservation_id": reservation_id,
-        "candidate_count": len(losers),
-        "candidates": [item.model_dump(mode="json") for item in losers],
+        "raw_candidate_count": len(losers),
+        "candidate_count": len(candidates),
+        "raw_candidates": [item.model_dump(mode="json") for item in losers],
+        "candidates": [item.model_dump(mode="json") for item in candidates],
         "interpretation": "potential candidates only; not eligibility or a buy signal",
     }
+    if manual_universe:
+        payload["manual_universe"] = {
+            "revision": manual_universe.revision,
+            "reviewed_at": manual_universe.reviewed_at.isoformat(),
+            "policy": manual_universe.policy.model_dump(mode="json"),
+            "limitation": manual_universe.limitation,
+        }
     with engine.begin() as connection:
         connection.execute(
             schema.scan_runs.insert().values(
@@ -40,4 +56,4 @@ def discover_biggest_losers(
                 payload=json.dumps(payload),
             )
         )
-    return losers
+    return candidates

@@ -108,6 +108,15 @@ with one quota-reserved request. If it cannot provide this universe, preserve
 the original losers list as discovery-only and request a provider/policy decision
 rather than inferring market cap from price or manually cherry-picking symbols.
 
+2026-09-09 revised decision: the user selected a manually maintained large-cap
+seed universe after the FMP screener returned HTTP 402. This is an explicit,
+versioned allow-list, not a live claim about index constituents or market cap.
+Every member is manually reviewed as a U.S.-listed common stock at list revision
+time; list provenance, reviewer, revision date and the $10/$2B policy are stored
+with each scan. FMP losers are intersected with this list and then checked against
+the $10 discovery price floor. List maintenance/review cadence remains an open
+release decision. Missing liquidity/spread requirements still prevent eligibility.
+
 Persist a quota ledger; reserve a call before making it and conservatively count
 failed/ambiguous requests. All FMP consumers share this ledger, including retries,
 evidence and optional benchmarking calls. Gate each scan by remaining budget:
@@ -387,6 +396,21 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
   - [ ] S13c: Switch discovery to the verified screener or deterministically
     intersect candidates with it; test boundary inclusions/exclusions, common
     stock classification and no results. Preserve source provenance.
+  - [x] S13m-a: Create a reviewed, versioned large-cap seed-universe file with
+    symbol, issuer name, security type, review date and list revision metadata.
+    Test malformed, duplicate and non-common-stock rows fail closed.
+    Completed: `config/large_cap_universe.json` contains 47 transparent initial
+    U.S.-listed common-stock symbols and list/policy/reviewer metadata. The
+    strict loader rejects malformed, duplicate and non-common-stock entries.
+    It is a manually maintained seed, not a current market-cap assertion.
+  - [x] S13m-b: Intersect the quota-accounted FMP biggest-losers result with the
+    seed universe and approved $10 floor. Persist both raw discovery and the
+    resulting shortlist plus policy/list provenance; test no-match and boundary
+    behavior. This is discovery narrowing only, not eligibility.
+    Completed: `discover_biggest_losers(..., manual_universe=...)` preserves raw
+    FMP candidates, logs the narrowed list and immutable list/policy provenance,
+    and returns the shortlist. Fixture tests cover no-match, price-floor boundary
+    and provenance. A new live FMP scan is needed to populate this path.
 - [ ] S14: Implement event deduplication across scans and restarts; test repeats
   and materially new events under approved deduplication rules.
 - [ ] S15: Implement approved evidence-provider wrapper and immutable provenance;

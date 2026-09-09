@@ -1,10 +1,12 @@
 from datetime import timedelta
+from pathlib import Path
 
 import httpx
 import pytest
 import sqlalchemy as sa
 
 from nomy_trader.market.discovery import discover_biggest_losers
+from nomy_trader.market.universe import load_manual_universe
 from nomy_trader.providers.fmp import FmpClient, FmpRateLimitError
 from nomy_trader.scenarios import AT
 from nomy_trader.storage import schema
@@ -92,4 +94,18 @@ def test_exhausted_budget_prevents_another_fmp_call(tmp_path):
     with pytest.raises(QuotaExhausted):
         discover_biggest_losers(engine, fmp(requests=seen), one_call_window, AT)
     assert len(seen) == 1
+    engine.dispose()
+
+
+def test_discovery_logs_raw_and_manual_universe_shortlist(tmp_path):
+    engine = open_database(tmp_path / "journal.sqlite")
+    upgrade(engine)
+    universe = load_manual_universe(Path("config/large_cap_universe.json"))
+    results = discover_biggest_losers(engine, fmp(), window(), AT, universe)
+    assert results == ()
+    with engine.connect() as connection:
+        payload = connection.execute(sa.select(schema.scan_runs.c.payload)).scalar_one()
+    assert '"raw_candidate_count": 1' in payload
+    assert '"candidate_count": 0' in payload
+    assert universe.revision in payload
     engine.dispose()
