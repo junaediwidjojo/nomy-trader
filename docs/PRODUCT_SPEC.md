@@ -36,9 +36,11 @@ unavailable portfolio limits require a recorded decision before release.
 
 The user manually trades through Ajaib. Ajaib's U.S. catalogue is a selected,
 changing subset of U.S. listings, so a U.S. ticker alone is insufficient. A
-candidate must match a dated, immutable Ajaib catalogue snapshot before it can
-pass discovery. A missing, expired or ambiguous match rejects the candidate; the
+candidate must match a versioned, immutable local Ajaib catalogue before it can
+pass discovery. A missing or ambiguous match rejects the candidate; the
 application must not imply that an instrument is tradeable in the user's account.
+The catalogue is manually refreshed from a user-supplied crawl; its revision and
+retrieval timestamp remain visible rather than silently claiming live availability.
 This is an availability gate only, not a broker integration, account query or
 order capability.
 

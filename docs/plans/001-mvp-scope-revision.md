@@ -120,12 +120,13 @@ release decision. Missing liquidity/spread requirements still prevent eligibilit
 
 2026-09-09 execution-venue decision: the user trades manually through Ajaib,
 whose U.S.-stock selection is a changing subset of listed U.S. securities.
-Treat Ajaib availability as a mandatory, fail-closed discovery gate. Do not add
-a broker connection or scrape/login to the user's account. Build a dated,
-manually reviewable catalogue snapshot from Ajaib's published list or explicit
-in-app user confirmation; preserve its source URL/retrieval time and revision
-with each scan. A ticker absent from, ambiguous in, or older than the approved
-snapshot stops before evidence/analysis.
+Treat Ajaib catalogue membership as a mandatory, fail-closed discovery gate. Do
+not add a broker connection or scrape/login to the user's account. Store the
+user-supplied crawl as a versioned local reference catalogue and preserve its
+source/retrieval time/revision with each scan. A ticker absent from or ambiguous
+in that catalogue stops before evidence/analysis. The user refreshes the local
+catalogue by supplying a newer crawl; staleness is reported, not automatically
+treated as a network failure.
 
 2026-09-09 policy revision: broaden the Ajaib-listed universe to price >$5 and
 market cap >$100M. This is only a discovery screen. It does not establish a
@@ -469,13 +470,15 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     history. No threshold, eligibility, plan or notification was produced.
   - [x] S13m-e: Add typed, immutable Ajaib catalogue-snapshot contracts and a
     manually reviewable local source file. Require catalogue provenance,
-    retrieval time and unambiguous U.S.-stock symbol match; test absent, expired
-    and duplicate matches reject discovery. No account access or broker API.
+    retrieval time and unambiguous U.S.-stock symbol match; test absent and
+    duplicate matches reject discovery. No account access or broker API.
     Completed: user supplied a JSON catalogue response with `APPROVED/OK` and
     739 entries. `config/ajaib_catalog_snapshot.json` preserves the 137 symbols
     matching >$5 and $300M–$10B as a dated revision, without copying unrelated
     icon URLs or treating it as a security-type classification. Strict loading
-    and tests reject malformed, duplicate and expired snapshots; FCUV is absent.
+    and tests reject malformed and duplicate snapshots; FCUV is absent. The
+    catalogue is deliberately local and manually refreshed rather than requiring
+    an automatic Ajaib fetch.
     Policy revision: regenerate the derived symbol subset using price >$5 and
     market cap >$100M before S13m-f. Preserve the original 739-entry response
     count and reject zero/missing market-cap records. Validation of the supplied

@@ -1,7 +1,6 @@
 """Dated user-supplied Ajaib catalogue snapshots; no account or order access."""
 
 import json
-from datetime import datetime, timedelta
 from pathlib import Path
 
 from pydantic import Field, ValidationError, model_validator
@@ -36,15 +35,9 @@ class AjaibCatalogSnapshot(Contract):
             raise ValueError("Ajaib snapshot has duplicate symbols")
         return self
 
-    def accepts(self, symbol: str, now: datetime, max_age: timedelta) -> bool:
-        if now.tzinfo is None or now.utcoffset() is None:
-            raise ValueError("availability clock must be timezone-aware")
-        if max_age <= timedelta(0):
-            raise ValueError("snapshot max age must be positive")
-        return (
-            self.retrieved_at <= now <= self.retrieved_at + max_age
-            and symbol in self.symbols
-        )
+    def accepts(self, symbol: str) -> bool:
+        """Local catalogue membership; it does not assert order eligibility."""
+        return symbol in self.symbols
 
 
 def load_ajaib_catalog(path: Path) -> AjaibCatalogSnapshot:
