@@ -726,7 +726,13 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
       for all four symbols but produced no result files within the bounded
       window, and was stopped. A prior BRZE run reached `REVIEW` with empty
       analyst reports, which is not evidence and cannot be used. Profile and
-      add a per-node timeout before another four-symbol attempt.
+      add a per-node timeout before another four-symbol attempt. Completed
+      diagnostic 2026-09-09: isolated BRZE market and fundamentals nodes both
+      made valid tool calls and received their data, but
+      `accounts/fireworks/models/glm-5p3-flash` returned empty content on the
+      following model turn. This is a model/tool-result compatibility failure,
+      not a Reddit or data-source failure. Test one alternate accessible model
+      with this two-turn trace before another four-symbol attempt.
     - [ ] Recheck each survivor with the independently configured quote source.
       If quote freshness/coverage is insufficient, do not state an entry price.
       Partial: Twelve Data observed 2026-09-08 13:30 UTC reference closes of
