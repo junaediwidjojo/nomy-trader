@@ -711,6 +711,10 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
       Completed 2026-09-09: snapshot `ajaib-20260909T083116Z` produced BRZE,
       OI, INFY and HPQ using price >$5, market cap >$100M, one-day <=-1% and
       one-week <=-3%.
+      Latest local run 2026-09-09: snapshot `ajaib-20260909T161623Z` imported
+      882 source entries and 623 working symbols, producing BRZE, OI, INFY,
+      SNAP and HPQ. The import and hint logs are ignored local files under
+      `var/`.
     - [ ] Retrieve filing metadata for each candidate through SEC EDGAR; select
       a bounded, relevant current filing for primary-source review.
       Partial: SEC metadata was retrieved for BRZE, OI and HPQ. INFY returned
@@ -736,6 +740,11 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
       produced non-empty reports. The later batch signals were BRZE `Hold`, OI
       `Underweight`, INFY `Underweight`, and HPQ `Hold`. This is untrusted
       supplementary research and cannot create a plan or formal outcome.
+      Latest local run 2026-09-09: the current five-symbol batch started BRZE
+      with the isolated TradingAgents environment but produced no completed
+      report or progress line within the bounded wait and was stopped. Preserve
+      its ignored local log; investigate per-node elapsed-time reporting before
+      another batch attempt.
     - [ ] Recheck each survivor with the independently configured quote source.
       If quote freshness/coverage is insufficient, do not state an entry price.
       Partial: Twelve Data observed 2026-09-08 13:30 UTC reference closes of
