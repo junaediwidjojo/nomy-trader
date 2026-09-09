@@ -1,12 +1,14 @@
 # nomy-trader — FMP and Telegram recommendation MVP ExecPlan
 
-Latest approved direction: user approved Massive Stocks Basic for end-of-day
-price/volume rechecks, retaining FMP discovery. This supersedes FMP-only
-enrichment below. Account registration/key provisioning is pending. No paid
-subscription is authorized. Use local MASSIVE_API_KEY alongside FMP_API_KEY.
-Recheck remains daily-bar analysis; missing spread/halt/fundamental fields
-still cannot silently pass eligibility. Existing FMP recheck code is historical
-partial work, not a working Massive adapter.
+Latest approved direction: user approved Twelve Data Basic as the recheck
+provider, retaining FMP biggest-losers discovery. This supersedes the attempted
+Massive Stocks Basic end-of-day recheck because Massive had not published the
+latest completed XNYS session. Use local TWELVE_DATA_API_KEY alongside
+FMP_API_KEY. No paid subscription is authorized. Twelve Data's free U.S. feed
+is a limited-venue reference and must never be presented as an executable
+consolidated quote; missing spread/halt/fundamental fields still cannot silently
+pass eligibility. Massive code and the stale-data finding remain retained as a
+deferred provider alternative, not an active dependency.
 
 Status: implementation approved by user on 2026-09-08. Recommendation-domain
 foundation and SQLite persistence milestones complete; S09 awaits FMP credentials. Unspecified policy values remain unset. This supersedes 001-domain-contracts.md for active
@@ -83,6 +85,18 @@ documents the intended discovery capability. Account-specific entitlement,
 symbol coverage, batch access, freshness, quota reset semantics, bandwidth and
 permitted private Telegram display remain unverified. Do not silently purchase
 a plan, switch provider or pretend delayed quotes are live if validation fails.
+
+Twelve Data Basic is the approved replacement for price/volume rechecks. Its
+published free quota is eight API credits per minute and 800 per day; each
+endpoint and requested symbol has an explicit documented credit weight. Reserve
+the conservative maximum required credits before dispatch, including failures;
+never assume a batch endpoint costs one credit without a documented response or
+account verification. Use its typed price/time-series response only to confirm
+the observed market state of a bounded shortlist after FMP discovery. Record
+provider/source timestamps, endpoint, requested symbols, quota reservation and
+venue-coverage limitation. Reject stale, missing, mismatched or incomplete
+data. No recommendation may claim a live, NBBO, consolidated-volume or
+executable quote based on this feed.
 
 Persist a quota ledger; reserve a call before making it and conservatively count
 failed/ambiguous requests. All FMP consumers share this ledger, including retries,
@@ -301,6 +315,32 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
   Full verification after the Massive checkpoint: Ruff format/lint, mypy and
   111 pytest tests pass. Resume at S12e after Massive publishes a current
   completed-session bar; do not lower the freshness requirement.
+
+  2026-09-09 provider revision: user approved Twelve Data Basic after adding
+  `TWELVE_DATA_API_KEY` to ignored `.env`. Massive is deferred as a possible
+  paid/delayed-data alternative; do not remove its code or silently query it.
+  Continue at the first unchecked Twelve Data substep below. Do not mark S12
+  complete until S12t-e succeeds with current, typed recheck data.
+  - [x] S12t-a: Record the approved provider replacement, free-plan credit
+    constraints and limited-venue data limitation in this ExecPlan and README.
+    Completed: 2026-09-09 after user provisioned the ignored local key; no
+    external request or source code change occurred in this documentation step.
+  - [ ] S12t-b: Implement a typed Twelve Data read-only client for the minimal
+    price and daily-time-series endpoints, with sanitized failures and no key in
+    URLs, logs or exceptions. Add fixture tests for malformed payloads,
+    authentication, rate limits and timeout.
+  - [ ] S12t-c: Extend persistent quota accounting with explicit Twelve Data
+    credits (eight per rolling minute and an account-verified daily ceiling).
+    Test multi-credit reservation, restart persistence and no automatic retry.
+  - [ ] S12t-d: Implement a provider-neutral recheck based on typed Twelve Data
+    observations. Cache immutable successful data only through its stated
+    freshness boundary; reject source-time ambiguity, stale daily bars, symbol
+    mismatch, missing volume and insufficient history. Preserve the feed's
+    coverage limitation in the result.
+  - [ ] S12t-e: Run one bounded FMP discovery-to-Twelve Data recheck using the
+    local keys. Record only sanitized result metadata, actual request/credit
+    accounting and limitations. It produces a data observation only, never an
+    eligibility pass, plan or notification.
 - [ ] S13: Implement deterministic candidate filters from approved parameters;
   verify boundary cases and no silent fallback for absent required fields.
 - [ ] S14: Implement event deduplication across scans and restarts; test repeats

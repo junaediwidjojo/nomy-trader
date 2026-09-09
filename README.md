@@ -17,27 +17,28 @@ are still pending. The verified FMP free account can list 50 losers but returned
 HTTP 402 when rechecking a live loser quote, so it cannot yet produce a reliable
 dynamic-candidate recheck. Resume at S12 only after resolving that provider gate.
 
-Massive Stocks Basic now supplies the replacement daily-bar recheck. The adapter
-and five-per-minute limiter are implemented. Its first real response was stale:
-88 bars through 2026-09-04 while the required completed XNYS session was
-2026-09-08, so nomy-trader safely rejected it. No plan or recommendation was
-created. It will resume when current completed-session data is available.
+Twelve Data Basic is now the approved price/volume recheck provider. Its free
+plan supplies eight API credits per minute and a daily allocation, with a
+limited-venue U.S. real-time reference feed. This is useful for confirming a
+shortlist, but is never an executable/consolidated quote or proof of eligibility.
+The current Massive end-of-day adapter remains deferred: its first real response
+was stale, with bars through 2026-09-04 while the required completed XNYS session
+was 2026-09-08. No plan or recommendation was created.
 
 ## Run the offline foundation
 
-## Massive registration for the approved recheck provider
+## Twelve Data registration for the approved recheck provider
 
-1. Register at https://massive.com/dashboard/signup.
-2. Select Stocks Basic ($0/month), for personal use. This provides end-of-day
-   data at five API calls per minute; no paid subscription is needed for this test.
-3. Find your API key in the Massive dashboard.
-4. Add `MASSIVE_API_KEY=your_key_here` to the existing local `.env`, keeping
+1. Register at https://twelvedata.com/.
+2. Select Basic ($0/month), for personal/internal non-display use.
+3. Find your API key in the Twelve Data dashboard.
+4. Add `TWELVE_DATA_API_KEY=your_key_here` to the existing local `.env`, keeping
    `FMP_API_KEY` as well. Never paste either key into chat or commit it.
-5. Resume S12a in the ExecPlan to verify actual candidate coverage before use.
+5. Resume S12t-b in the ExecPlan to verify actual candidate coverage before use.
 
-Massive integration is approved but not implemented yet. Its free bars do not
-provide real-time bid/ask quotes. Official setup:
-https://massive.com/docs/rest/quickstart
+Twelve Data integration is approved but not implemented yet. The free feed does
+not establish a consolidated bid/ask or executable price. Official pricing:
+https://twelvedata.com/pricing
 
 ## Offline verification
 
