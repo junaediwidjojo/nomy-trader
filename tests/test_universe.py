@@ -13,7 +13,7 @@ def test_manual_seed_loads_and_filters_price_and_symbols():
             Loser(
                 symbol="AAPL",
                 name="Apple",
-                price="10",
+                price="5.01",
                 change="-1",
                 changesPercentage="-9",
                 exchange="NASDAQ",
@@ -21,7 +21,7 @@ def test_manual_seed_loads_and_filters_price_and_symbols():
             Loser(
                 symbol="MSFT",
                 name="Microsoft",
-                price="9.99",
+                price="5",
                 change="-1",
                 changesPercentage="-9",
                 exchange="NASDAQ",

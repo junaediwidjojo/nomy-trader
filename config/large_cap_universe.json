@@ -1,9 +1,9 @@
 {
-  "revision": "2026-09-09.1",
+  "revision": "2026-09-09.2",
   "reviewed_at": "2026-09-09T00:00:00Z",
   "reviewer": "nomy-trader initial manual seed",
   "policy": {
-    "minimum_price_usd": "10",
+    "minimum_price_usd": "5",
     "minimum_market_cap_usd": "2000000000"
   },
   "limitation": "Manual seed list; not a real-time index or market-cap feed. Review before each policy release.",

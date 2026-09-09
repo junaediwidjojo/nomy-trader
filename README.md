@@ -25,14 +25,14 @@ The current Massive end-of-day adapter remains deferred: its first real response
 was stale, with bars through 2026-09-04 while the required completed XNYS session
 was 2026-09-08. No plan or recommendation was created.
 
-The approved large-cap discovery policy requires price at least $10 and market
+The approved large-cap discovery policy requires price strictly greater than $5 and market
 capitalization at least $2 billion. FMP's screener endpoint returned HTTP 402 for
 this account, so this filter is currently a provider gate; the system must not
 mislabel price-only candidates as large-cap stocks.
 
 The active replacement is a transparent, manually maintained seed list at
 [`config/large_cap_universe.json`](config/large_cap_universe.json). FMP loser
-results are narrowed to this list and the $10 price floor, while retaining raw
+results are narrowed to this list and the >$5 price floor, while retaining raw
 source candidates in SQLite. Review the list before each policy release; it does
 not automatically prove current market cap, liquidity, or eligibility.
 

@@ -99,7 +99,8 @@ data. No recommendation may claim a live, NBBO, consolidated-volume or
 executable quote based on this feed.
 
 Universe decision approved 2026-09-09: limit discovery to U.S.-listed common
-stocks with price at least $10 and market capitalization at least $2 billion.
+stocks with price strictly greater than $5 and market capitalization at least
+$2 billion.
 These remove the current microcap/penny-stock failure mode. Average daily dollar
 volume, maximum spread, exact allowed exchanges and a reproducible common-stock
 classification source remain unresolved; their absence blocks eligibility and
@@ -112,9 +113,9 @@ rather than inferring market cap from price or manually cherry-picking symbols.
 seed universe after the FMP screener returned HTTP 402. This is an explicit,
 versioned allow-list, not a live claim about index constituents or market cap.
 Every member is manually reviewed as a U.S.-listed common stock at list revision
-time; list provenance, reviewer, revision date and the $10/$2B policy are stored
+time; list provenance, reviewer, revision date and the >$5/$2B policy are stored
 with each scan. FMP losers are intersected with this list and then checked against
-the $10 discovery price floor. List maintenance/review cadence remains an open
+the >$5 discovery price floor. List maintenance/review cadence remains an open
 release decision. Missing liquidity/spread requirements still prevent eligibility.
 
 Persist a quota ledger; reserve a call before making it and conservatively count
@@ -390,7 +391,7 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     an undocumented or unaffordable endpoint. A price-only FMP-loser filter does
     not establish market cap. Select and verify a separate market-cap source, or
     explicitly revise the policy, before S13b/S13c.
-  - [ ] S13b: Add versioned universe-policy configuration for the approved $10
+  - [ ] S13b: Add versioned universe-policy configuration for the approved >$5
     and $2B floors, with required-but-unset average-dollar-volume/spread inputs.
     Test that missing liquidity fields block eligibility.
   - [ ] S13c: Switch discovery to the verified screener or deterministically
@@ -404,7 +405,7 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     strict loader rejects malformed, duplicate and non-common-stock entries.
     It is a manually maintained seed, not a current market-cap assertion.
   - [x] S13m-b: Intersect the quota-accounted FMP biggest-losers result with the
-    seed universe and approved $10 floor. Persist both raw discovery and the
+    seed universe and approved price floor. Persist both raw discovery and the
     resulting shortlist plus policy/list provenance; test no-match and boundary
     behavior. This is discovery narrowing only, not eligibility.
     Completed: `discover_biggest_losers(..., manual_universe=...)` preserves raw
@@ -414,6 +415,8 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     matches: FMP's 50 most extreme decliners were all outside the list. This
     proves that intersecting a top-50 movers feed cannot discover a large-cap
     decline reliably; it created no recommendation or notification.
+    Policy revision: price is strictly greater than $5 as of 2026-09-09. The
+    seed configuration and boundary test are revised in the accompanying commit.
   - [x] S13m-c: Verify FMP daily-history access for a bounded sample of seed
     symbols and document per-symbol cost, latest-session freshness and response
     size. If viable within the 250-call daily budget, calculate and persist raw

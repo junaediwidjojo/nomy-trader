@@ -55,5 +55,5 @@ def shortlist(losers: tuple[Loser, ...], universe: ManualUniverse) -> tuple[Lose
     allowed = {security.symbol for security in universe.securities}
     floor: Decimal = universe.policy.minimum_price_usd
     return tuple(
-        loser for loser in losers if loser.symbol in allowed and loser.price >= floor
+        loser for loser in losers if loser.symbol in allowed and loser.price > floor
     )
