@@ -603,6 +603,20 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     network adapter is introduced. SEC EDGAR/company releases are preferred for
     filings; source terms, rate limits, point-in-time availability and issuer
     identity matching must be tested. Missing primary evidence blocks analysis.
+    Provider decision: use SEC EDGAR's public `data.sec.gov` submissions API for
+    U.S. issuer filing metadata. SEC documents that it has no API-key requirement
+    but automated access must comply with its Privacy and Security Policy. Require
+    a local `SEC_USER_AGENT` contact value, use a conservative one request per
+    second client limit, resolve ticker-to-CIK from SEC's published ticker file,
+    and retain accession/document URLs plus filing dates rather than downloaded
+    content. Do not call this provider until its local contact configuration is
+    present; no SEC submission API is ever used.
+    Resume: `providers.sec_edgar` now has a typed, read-only metadata adapter
+    and `python -m nomy_trader sec-filings --symbol SYMBOL` command. Fixture
+    tests verify ticker/CIK matching, requested-form narrowing, contact-header
+    validation and sanitized access failures. It has not contacted SEC because
+    `SEC_USER_AGENT` is not configured; after the user adds it, make one BRZE
+    metadata lookup and record the outcome before adding document retrieval.
 - [ ] S16: Add bounded evidence context construction; test conflicting sources,
   future/revised evidence and instruction-like retrieved text.
   - [x] S16a: Implement deterministic hard-block evaluation of a typed evidence

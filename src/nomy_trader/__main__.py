@@ -14,6 +14,7 @@ from nomy_trader.market.ajaib_catalog import import_user_catalog
 from nomy_trader.market.ajaib_hints import run_reversal_hint_scan
 from nomy_trader.market.daily_recheck import recheck_daily
 from nomy_trader.providers.massive import MassiveClient, MassiveError
+from nomy_trader.providers.sec_edgar import SecEdgarClient, SecEdgarError
 from nomy_trader.providers.twelve_data import TwelveDataClient, TwelveDataError
 from nomy_trader.storage.database import open_database, upgrade
 from nomy_trader.storage.rate_limit import RateLimited, reserve_credits, reserve_request
@@ -25,7 +26,14 @@ def main() -> int:
         description="Recheck a logged FMP candidate using daily bars"
     )
     parser.add_argument(
-        "command", choices=["recheck", "twelve-quote", "ajaib-import", "ajaib-hints"]
+        "command",
+        choices=[
+            "recheck",
+            "twelve-quote",
+            "ajaib-import",
+            "ajaib-hints",
+            "sec-filings",
+        ],
     )
     parser.add_argument(
         "--symbol", help="Default: first candidate in the latest saved FMP scan"
@@ -41,11 +49,15 @@ def main() -> int:
     load_dotenv(Path.cwd() / ".env", override=False)
     key = os.getenv("MASSIVE_API_KEY", "")
     twelve_key = os.getenv("TWELVE_DATA_API_KEY", "")
+    sec_user_agent = os.getenv("SEC_USER_AGENT", "")
     if args.command == "recheck" and not key:
         print("MASSIVE_API_KEY is missing from environment or local .env")
         return 1
     if args.command == "twelve-quote" and not twelve_key:
         print("TWELVE_DATA_API_KEY is missing from environment or local .env")
+        return 1
+    if args.command == "sec-filings" and not sec_user_agent:
+        print("SEC_USER_AGENT is missing from environment or local .env")
         return 1
     args.database.parent.mkdir(parents=True, exist_ok=True)
     if args.database.exists():
@@ -86,6 +98,21 @@ def main() -> int:
                     f"1m {month}%"
                 )
             print(scan.limitation)
+            return 0
+        if args.command == "sec-filings":
+            if args.symbol is None:
+                print("Supply --symbol for SEC filing lookup")
+                return 1
+            with SecEdgarClient(sec_user_agent) as client:
+                filings = client.latest_filings(args.symbol, {"8-K", "10-K", "10-Q"})
+            print(
+                f"SEC_FILINGS {args.symbol.upper()} | {len(filings)} metadata records"
+            )
+            for filing in filings:
+                print(
+                    f"{filing.form} | {filing.filed_at.date()} | {filing.document_url}"
+                )
+            print("Filing metadata only; no analysis, plan, or notification.")
             return 0
         symbol = args.symbol
         if symbol is None:
@@ -133,7 +160,13 @@ def main() -> int:
         print(f"Saved {len(result.bars.results)} daily bars to {args.database}")
         print(result.limitation)
         return 0
-    except (MassiveError, TwelveDataError, RateLimited, ValueError) as exc:
+    except (
+        MassiveError,
+        SecEdgarError,
+        TwelveDataError,
+        RateLimited,
+        ValueError,
+    ) as exc:
         print(f"Recheck stopped: {exc}")
         return 1
     finally:

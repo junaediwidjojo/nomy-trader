@@ -26,3 +26,12 @@ snapshot with:
 ```text
 uv run python -m nomy_trader ajaib-hints
 ```
+
+For the read-only SEC EDGAR filing-metadata provider, add a contact User-Agent
+to the local `.env` before running any future filing lookup:
+
+```text
+SEC_USER_AGENT="nomy-trader your-email@example.com"
+```
+
+This is not an SEC account, API key, broker credential or trading permission.
