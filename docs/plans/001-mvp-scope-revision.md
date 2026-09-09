@@ -410,7 +410,15 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     Completed: `discover_biggest_losers(..., manual_universe=...)` preserves raw
     FMP candidates, logs the narrowed list and immutable list/policy provenance,
     and returns the shortlist. Fixture tests cover no-match, price-floor boundary
-    and provenance. A new live FMP scan is needed to populate this path.
+    and provenance. A live scan on 2026-09-09 returned zero seed-universe
+    matches: FMP's 50 most extreme decliners were all outside the list. This
+    proves that intersecting a top-50 movers feed cannot discover a large-cap
+    decline reliably; it created no recommendation or notification.
+  - [ ] S13m-c: Verify FMP daily-history access for a bounded sample of seed
+    symbols and document per-symbol cost, latest-session freshness and response
+    size. If viable within the 250-call daily budget, calculate and persist raw
+    one-session returns across the manual universe in small quota-reserved
+    batches. Do not apply an abnormal-decline threshold until D02 is approved.
 - [ ] S14: Implement event deduplication across scans and restarts; test repeats
   and materially new events under approved deduplication rules.
 - [ ] S15: Implement approved evidence-provider wrapper and immutable provenance;
