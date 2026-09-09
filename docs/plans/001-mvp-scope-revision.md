@@ -263,15 +263,24 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
 - [ ] S12: Implement entitled quote/history enrichment and cache freshness;
   test missing fields, stale timestamps and batch/per-symbol budget bounds.
   Approved replacement checklist (complete and commit each substep):
-  - [ ] S12a: User registers Massive Stocks Basic ($0) and provisions
-    MASSIVE_API_KEY in the ignored local .env. Verify actual candidate access.
-  - [ ] S12b: Add typed Massive daily OHLCV adapter and sanitized HTTP failures;
+  - [x] S12a: User registered Massive Stocks Basic ($0) and provisioned
+    MASSIVE_API_KEY in the ignored local .env. Actual BANL daily-bar access
+    returned HTTP 200 without exposing the key.
+  - [x] S12b: Add typed Massive daily OHLCV adapter and sanitized HTTP failures;
     test unavailable symbols, missing/invalid fields and auth/429 failures.
-  - [ ] S12c: Add separate persistent rate accounting allowing no more than five
+    Completed: strict adjusted OHLCV schema, bounded one-year requests, header
+    authentication and redacted HTTP/data failures have fixture coverage.
+  - [x] S12c: Add separate persistent rate accounting allowing no more than five
     Massive requests in any rolling minute, including retries/pagination.
-  - [ ] S12d: Replace active recheck with Massive completed-session bars; preserve
+    Completed: persistent immutable reservations, restart/concurrency tests and
+    no automatic retry behavior. The published free-plan ceiling is used here.
+  - [x] S12d: Replace active recheck with Massive completed-session bars; preserve
     source dates, validate session freshness and cache immutable observations.
     Never turn end-of-day bars into a live quote or fill missing policy fields.
+    Completed: XNYS calendar chooses the latest completed session, including
+    weekend/pre-market boundaries. Successful data persists until the next close;
+    stale data is logged and rejected. Cache round-trip and stale refusal tests
+    pass. A full recheck still requires data through the selected session.
   - [ ] S12e: Test and run one bounded FMP discovery-to-Massive recheck cycle;
     log data/limitations and update the active specs and next resume point.
   Resume: code and fixture tests are complete: a recheck reserves quote/history
@@ -280,6 +289,18 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
   first actual loser; no cache was written. It must remain unchecked until D01
   is resolved with a free-tier-supported dynamic-candidate endpoint, explicit
   paid plan approval, or a revised scope. Do not retry or bypass filters.
+
+  2026-09-09 Massive checkpoint: S12a is complete (key present and actual BANL
+  daily data returned); S12b–d are implemented and under verification, but do
+  not mark them complete until the end-to-end freshness gate passes. The first
+  FMP discovery returned 50 candidates. Massive returned 88 daily bars for its
+  selected candidate, with latest session 2026-09-04 / close 9.01 rather than
+  the expected completed XNYS session 2026-09-08. The recheck recorded a safe
+  provider/data failure and produced no cache, eligibility result, plan or
+  notification. This is a validated stale-data refusal, not a strategy result.
+  Full verification after the Massive checkpoint: Ruff format/lint, mypy and
+  111 pytest tests pass. Resume at S12e after Massive publishes a current
+  completed-session bar; do not lower the freshness requirement.
 - [ ] S13: Implement deterministic candidate filters from approved parameters;
   verify boundary cases and no silent fallback for absent required fields.
 - [ ] S14: Implement event deduplication across scans and restarts; test repeats

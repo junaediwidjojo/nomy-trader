@@ -3,6 +3,13 @@
 import sqlalchemy as sa
 
 metadata = sa.MetaData()
+provider_requests = sa.Table(
+    "provider_requests",
+    metadata,
+    sa.Column("id", sa.Text, primary_key=True),
+    sa.Column("provider", sa.Text, nullable=False),
+    sa.Column("reserved_at", sa.Float, nullable=False),
+)
 events = sa.Table(
     "events",
     metadata,

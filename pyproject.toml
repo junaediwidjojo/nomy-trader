@@ -9,6 +9,7 @@ description = "Offline domain foundation for educational buy-side recommendation
 requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.14,<2",
+    "exchange-calendars>=4.5,<5",
     "httpx>=0.28,<1",
     "pydantic>=2.10,<3",
     "python-dotenv>=1.1,<2",

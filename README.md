@@ -17,6 +17,12 @@ are still pending. The verified FMP free account can list 50 losers but returned
 HTTP 402 when rechecking a live loser quote, so it cannot yet produce a reliable
 dynamic-candidate recheck. Resume at S12 only after resolving that provider gate.
 
+Massive Stocks Basic now supplies the replacement daily-bar recheck. The adapter
+and five-per-minute limiter are implemented. Its first real response was stale:
+88 bars through 2026-09-04 while the required completed XNYS session was
+2026-09-08, so nomy-trader safely rejected it. No plan or recommendation was
+created. It will resume when current completed-session data is available.
+
 ## Run the offline foundation
 
 ## Massive registration for the approved recheck provider
