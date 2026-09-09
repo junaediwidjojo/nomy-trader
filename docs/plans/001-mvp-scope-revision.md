@@ -486,6 +486,11 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     137-symbol snapshot remains the prior $300M–$10B derivation and is inactive
     pending replacement by a reproducible import of the user-provided 739-entry
     JSON; do not use it for the new policy.
+    Update: `import_user_catalog` now validates and persistently records the full
+    user-supplied response plus its derived working-symbol revision in SQLite.
+    Fixture tests cover approved status, declared-count integrity, >$5/>$100M
+    boundaries and durable reload. Next action is the controlled local import of
+    the supplied 739-entry attachment; do not use the legacy 137 file afterward.
   - [ ] S13m-f: Intersect raw manual-universe observations with a current Ajaib
     snapshot and persist match/snapshot revision. Test no-match and stale
     snapshot behavior; present availability separately from any investment claim.
