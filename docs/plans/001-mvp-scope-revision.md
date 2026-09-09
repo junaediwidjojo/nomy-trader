@@ -171,6 +171,19 @@ usable daily budget. Schedule frequency, enrichment cap, reserve, cache age and
 reset boundary remain decisions below. Restart must not reset usage. No bursts
 to catch up missed scans. Exhaustion pauses work until the verified reset.
 
+2026-09-09 proposed TradingAgents comparison: retain nomy-trader's typed,
+deterministic evidence/risk/plan pipeline as authoritative. Run the separately
+checked-out TradingAgents package only as a manually started, bounded research
+sandbox for one already-shortlisted symbol. Configure its `openai_compatible`
+provider with the user's local Fireworks key and documented Fireworks inference
+base URL. Limit it to one debate and one risk round, disable checkpoint/memory
+reuse, isolate its cache/output path, and treat every result as untrusted,
+non-deterministic supplementary commentary. It cannot write nomy-trader SQLite,
+change filter thresholds, create a plan, calculate sizing, notify Telegram, or
+authorize a manual purchase. Do not add its LangGraph/LangChain dependency tree
+to this package unless a later comparison proves a specific benefit and the user
+approves a separate integration plan.
+
 Sizing is advisory arithmetic using explicitly configured capital/risk inputs,
 entry ceiling and stop. Never infer actual cash, positions, fills, realized loss
 or exposure from prior recommendations. The model cannot size the trade. The
@@ -641,6 +654,11 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     Completed: `CitedReview` and `validate_review` require a bull or bear role
     and evidence citations belonging to the packet. No model adapter, network
     request, action, sizing, valuation, plan or notification exists.
+  - [ ] S17b: Configure and run one isolated TradingAgents/Fireworks sandbox
+    comparison for BRZE after the user supplies a local key and accessible model
+    ID. Record only model/config versions, source date, output hash and explicit
+    limitations. Do not copy the key, install its dependencies into nomy-trader,
+    or import output into the evidence packet without cited primary sources.
 - [ ] S18: Implement approved deterministic valuation formulas with explicit
   assumptions; verify arithmetic and invalid valuation rejection.
 - [ ] S19: Implement approved advisory sizing and risk applicability policy;

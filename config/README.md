@@ -35,3 +35,25 @@ SEC_USER_AGENT="nomy-trader your-email@example.com"
 ```
 
 This is not an SEC account, API key, broker credential or trading permission.
+
+## TradingAgents sandbox
+
+TradingAgents is a separate comparison tool, not part of nomy-trader's decision,
+risk, plan or notification pipeline. To use a Fireworks trial key through its
+OpenAI-compatible endpoint, add these local `.env` values:
+
+```text
+OPENAI_COMPATIBLE_API_KEY="paste-your-Fireworks-key-here"
+TRADINGAGENTS_LLM_PROVIDER="openai_compatible"
+TRADINGAGENTS_LLM_BACKEND_URL="https://api.fireworks.ai/inference/v1"
+TRADINGAGENTS_DEEP_THINK_LLM="set-a-Fireworks-model-id-you-can-access"
+TRADINGAGENTS_QUICK_THINK_LLM="set-a-Fireworks-model-id-you-can-access"
+TRADINGAGENTS_MAX_DEBATE_ROUNDS="1"
+TRADINGAGENTS_MAX_RISK_ROUNDS="1"
+TRADINGAGENTS_CHECKPOINT_ENABLED="false"
+```
+
+Do not put the Fireworks key in Git, source code, logs, a Telegram message, or
+the dedicated TradingAgents checkout. The model IDs must come from the models
+enabled on your Fireworks account; the integration will verify them with one
+bounded sandbox run before it accepts output as supplementary research.
