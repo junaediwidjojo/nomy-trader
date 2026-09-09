@@ -1,0 +1,15 @@
+{
+  "revision": "2026-09-09-user-supplied-1",
+  "retrieved_at": "2026-09-09T07:17:18Z",
+  "source": "User-supplied Ajaib catalogue JSON with APPROVED/OK status",
+  "catalog_entry_count": 739,
+  "filter": {
+    "minimum_price_exclusive_usd": "5",
+    "minimum_market_cap_usd": "300000000",
+    "maximum_market_cap_usd": "10000000000"
+  },
+  "limitation": "Availability and price/market-cap screen only; includes instruments requiring later common-stock classification. Refresh before use.",
+  "symbols": [
+    "APTV", "OSCR", "SIRI", "MP", "CHWY", "ESTC", "ONON", "AGCO", "RMBS", "SNAP", "SBSW", "KTOS", "AAOI", "BAH", "AAL", "VIAV", "GME", "ACM", "IBRX", "GTLB", "CNM", "WULF", "TWST", "RIOT", "OWL", "GAP", "PATH", "ZETA", "Z", "CELH", "OKLO", "APLD", "CAG", "CIFR", "AVAV", "MBLY", "DUOL", "NCLH", "CAVA", "S", "TTD", "JOBY", "PL", "RIG", "ELF", "HIMS", "CPB", "BILI", "QBTS", "M", "EPAM", "CORZ", "UEC", "OBDC", "SYM", "RELY", "KLAR", "CRSP", "MAIN", "BULL", "XE", "RGTI", "ALM", "IRDM", "DAVE", "ENPH", "TDW", "BB", "ACHR", "MARA", "ONDS", "USAR", "COLD", "AXTI", "IOVA", "SMR", "ABCL", "FLY", "SBLK", "SEI", "BRZE", "LEU", "ZIM", "QS", "BTDR", "FRSH", "EXK", "FRMI", "FSLY", "KC", "CLSK", "COCO", "NVTS", "SOUN", "HSAI", "MNSO", "AEHR", "AMBA", "UPST", "PENG", "RDW", "STUB", "DJT", "LUNR", "PTON", "ARR", "RUN", "SEDG", "VOYG", "ASAN", "INOD", "QUBT", "GT", "NVAX", "AI", "FMC", "IIPR", "WEN", "WOLF", "AMSC", "PUMP", "POET", "TE", "GOLD", "ORC", "RCAT", "FCEL", "UMAC", "TRIP", "BW", "DXYZ", "NNE", "AHCO", "BKSY", "DC", "DNA", "ARQQ"
+  ]
+}

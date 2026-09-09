@@ -460,14 +460,15 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     AVGO, LLY, MA, ORCL, HD, PG, MRK, CRM, ACN, MCD, IBM, CAT, NOW, TMO, PM,
     QCOM, AMGN, TXN, SPGI, BKNG, ISRG and ADP after FMP returned unusable
     history. No threshold, eligibility, plan or notification was produced.
-  - [ ] S13m-e: Add typed, immutable Ajaib catalogue-snapshot contracts and a
+  - [x] S13m-e: Add typed, immutable Ajaib catalogue-snapshot contracts and a
     manually reviewable local source file. Require catalogue provenance,
     retrieval time and unambiguous U.S.-stock symbol match; test absent, expired
     and duplicate matches reject discovery. No account access or broker API.
-    Resume: official browser page is current and paginated, but normal HTTP
-    retrieval is Cloudflare-blocked. First obtain an allowed catalogue artifact;
-    do not create a partial snapshot from the first page or an old marketing
-    article and call it current.
+    Completed: user supplied a JSON catalogue response with `APPROVED/OK` and
+    739 entries. `config/ajaib_catalog_snapshot.json` preserves the 137 symbols
+    matching >$5 and $300M–$10B as a dated revision, without copying unrelated
+    icon URLs or treating it as a security-type classification. Strict loading
+    and tests reject malformed, duplicate and expired snapshots; FCUV is absent.
   - [ ] S13m-f: Intersect raw manual-universe observations with a current Ajaib
     snapshot and persist match/snapshot revision. Test no-match and stale
     snapshot behavior; present availability separately from any investment claim.
