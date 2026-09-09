@@ -748,6 +748,12 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
       `curl_cffi` request had no effective timeout. LangGraph then waited on the
       unfinished worker. Add a bounded Yahoo Finance timeout/fallback or exclude
       the fundamentals tool before another batch attempt; do not rerun blindly.
+      A bounded BRZE market-only run then completed with `Hold` and a populated
+      technical report. Its final portfolio decision nevertheless inserted
+      unsupported fundamental claims while no fundamentals analyst was enabled.
+      Treat only the cited market snapshot as usable supplementary data; discard
+      the final decision's unsupported facts and do not use market-only output
+      to create a recommendation.
     - [ ] Recheck each survivor with the independently configured quote source.
       If quote freshness/coverage is insufficient, do not state an entry price.
       Partial: Twelve Data observed 2026-09-08 13:30 UTC reference closes of
