@@ -682,9 +682,15 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     checkout virtual environment. Its full BRZE graph did not complete or write
     a result within the bounded run window, so the job was stopped to prevent
     further trial-credit use. No TradingAgents decision, evidence, plan or
-    recommendation exists. Next action: profile which dataflow/agent blocks the
-    graph and add per-node timeouts or a smaller explicitly approved comparison;
-    do not retry the full graph blindly.
+    recommendation exists. After the user connected Cloudflare WARP on
+    2026-09-09, a second bounded BRZE run still produced neither a decision nor
+    an error file after 90 seconds and was stopped. WARP therefore did not make
+    the full graph usable. TradingAgents' default graph invokes several external
+    dataflows (Yahoo Finance for stock, fundamentals, news and technical data;
+    FRED for macro data; and Polymarket for prediction data), so the stalled
+    dependency remains unknown. Next action: profile one dataflow/node at a time
+    with request timeouts, or run a smaller explicitly approved comparison that
+    excludes unavailable sources; do not retry the full graph blindly.
   - [ ] S17c: Run the immediate manual analysis session in this order:
     - [ ] Re-run the local Ajaib filter and record the exact snapshot revision,
       criteria and resulting symbols.
