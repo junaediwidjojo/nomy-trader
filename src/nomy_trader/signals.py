@@ -245,3 +245,21 @@ def run_price_signal_fixture(fixture: PriceSignalFixture) -> PriceSignalWorkflow
             "retrieve evidence, price data, or TradingAgents output."
         ),
     )
+
+
+class CompletedSignal(Contract):
+    """Immutable, reproducible record ready for the local SQLite journal."""
+
+    id: Text
+    recorded_at: Timestamp
+    fixture: PriceSignalFixture
+    result: PriceSignalWorkflowResult
+
+    @model_validator(mode="after")
+    def matches_the_deterministic_workflow(self) -> "CompletedSignal":
+        if self.recorded_at < self.fixture.evidence_packet.as_of:
+            raise ValueError("signal record precedes its evidence packet")
+        expected = run_price_signal_fixture(self.fixture)
+        if self.result != expected:
+            raise ValueError("signal result does not match deterministic workflow")
+        return self

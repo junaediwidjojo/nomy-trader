@@ -97,7 +97,7 @@ persistence/API adapters wait until the pure core passes.
 - [x] P09: Add a timeout-bounded TradingAgents adapter that receives only
   curated facts and records a report hash; never invoke its raw graph in the
   recommendation path until its Yahoo fallback is fixed.
-- [ ] P10: Persist completed signals, add delivery later, and run full quality
+- [x] P10: Persist completed signals, add delivery later, and run full quality
   checks after each completed step.
 
 ## 8. Test and validation plan

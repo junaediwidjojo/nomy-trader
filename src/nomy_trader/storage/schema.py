@@ -116,3 +116,12 @@ scan_runs = sa.Table(
     sa.Column("started_at", sa.Text, nullable=False),
     sa.Column("payload", sa.Text, nullable=False),
 )
+signal_records = sa.Table(
+    "signal_records",
+    metadata,
+    sa.Column("id", sa.Text, primary_key=True),
+    sa.Column("symbol", sa.Text, nullable=False),
+    sa.Column("event_id", sa.Text, nullable=False),
+    sa.Column("recorded_at", sa.Text, nullable=False),
+    sa.Column("payload", sa.Text, nullable=False),
+)
