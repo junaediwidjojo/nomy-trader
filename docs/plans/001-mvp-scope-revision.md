@@ -591,10 +591,37 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
   and materially new events under approved deduplication rules.
 - [ ] S15: Implement approved evidence-provider wrapper and immutable provenance;
   test availability/version timestamps and unavailable primary evidence.
+  - [x] S15a: Add offline typed evidence-packet contracts for one shortlisted
+    symbol: primary filings/releases, dated event explanation and explicit
+    business-risk observations. Reject missing timestamps, duplicate evidence,
+    future availability and unsupported risk states. This stores no source text
+    and makes no network request.
+    Completed: `research.EvidencePacket` requires dated, event-matched evidence
+    and exactly one cited observation for each required business-risk category.
+    Fixture tests reject incomplete packets and invalid evidence references.
+  - [ ] S15b: Select and verify an entitled primary-source provider before a
+    network adapter is introduced. SEC EDGAR/company releases are preferred for
+    filings; source terms, rate limits, point-in-time availability and issuer
+    identity matching must be tested. Missing primary evidence blocks analysis.
 - [ ] S16: Add bounded evidence context construction; test conflicting sources,
   future/revised evidence and instruction-like retrieved text.
+  - [x] S16a: Implement deterministic hard-block evaluation of a typed evidence
+    packet. Bankruptcy, active delisting/trading halt, unresolved going-concern,
+    material dilution, absent event explanation or stale evidence must return a
+    structured `BLOCKED` result. A clean packet is only `READY_FOR_REVIEW`, not
+    a buy approval.
+    Completed: `evaluate_business_gate` returns structured `BLOCKED` reasons for
+    a present/unknown critical risk or unresolved event explanation. A clean
+    packet returns only `READY_FOR_REVIEW`; fixture tests cover both states.
 - [ ] S17: Implement OpenAI adapter and strict structured analyst outputs;
   test malformed output, unsupported citations/actions, timeout and refusal.
+  - [x] S17a: Define separately validated bull-case and bear-case review
+    contracts. Each claim must cite packet evidence; neither reviewer may set
+    action, position size, price, stop, target or confidence. A later model
+    adapter may populate these contracts only after S15b/D07 approval.
+    Completed: `CitedReview` and `validate_review` require a bull or bear role
+    and evidence citations belonging to the packet. No model adapter, network
+    request, action, sizing, valuation, plan or notification exists.
 - [ ] S18: Implement approved deterministic valuation formulas with explicit
   assumptions; verify arithmetic and invalid valuation rejection.
 - [ ] S19: Implement approved advisory sizing and risk applicability policy;
