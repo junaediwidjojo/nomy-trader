@@ -351,6 +351,14 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     local keys. Record only sanitized result metadata, actual request/credit
     accounting and limitations. It produces a data observation only, never an
     eligibility pass, plan or notification.
+    Resume: on 2026-09-09, the first saved FMP discovery candidate was `FCUV`.
+    One live, read-only Twelve Data `/quote` request succeeded after reserving
+    one local credit: source timestamp `2026-09-08T13:30:00Z`, close `5.91000`,
+    previous close `17`, volume `1,365,300`. This is a single limited-venue
+    observation only. S12t-e stays unchecked because S12t-d has not yet made
+    the observation immutable, applied source-freshness rules, or reconciled
+    the returned credit headers. No eligibility result, plan, or notification
+    was created.
 - [ ] S13: Implement deterministic candidate filters from approved parameters;
   verify boundary cases and no silent fallback for absent required fields.
 - [ ] S14: Implement event deduplication across scans and restarts; test repeats
