@@ -743,8 +743,11 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
       Latest local run 2026-09-09: the current five-symbol batch started BRZE
       with the isolated TradingAgents environment but produced no completed
       report or progress line within the bounded wait and was stopped. Preserve
-      its ignored local log; investigate per-node elapsed-time reporting before
-      another batch attempt.
+      its ignored local log. An instrumented BRZE run identified the blocker:
+      the fundamentals tool called Yahoo Finance `Ticker.info`, where its
+      `curl_cffi` request had no effective timeout. LangGraph then waited on the
+      unfinished worker. Add a bounded Yahoo Finance timeout/fallback or exclude
+      the fundamentals tool before another batch attempt; do not rerun blindly.
     - [ ] Recheck each survivor with the independently configured quote source.
       If quote freshness/coverage is insufficient, do not state an entry price.
       Partial: Twelve Data observed 2026-09-08 13:30 UTC reference closes of
