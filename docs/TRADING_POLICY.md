@@ -16,7 +16,7 @@ explicit hypothesis, experiment, and approval.
 - Exclude OTC, penny stocks, leveraged/inverse ETFs, halted securities, and
   instruments without reliable point-in-time evidence.
 - Minimum price: strictly greater than $5 (user-approved 2026-09-09).
-- Market capitalization: $300 million through $10 billion (user-approved
+- Market capitalization: strictly greater than $100 million (user-approved
   2026-09-09). A dated Ajaib catalogue snapshot is the availability source;
   missing or ambiguous market-cap data blocks discovery.
 - Minimum average daily dollar volume and maximum spread: TBD. Until both are
@@ -32,6 +32,15 @@ An abnormal decline should combine absolute and volatility-relative movement:
 - Minimum standardized decline versus recent volatility: TBD.
 - Minimum relative volume: TBD.
 - Quotes and event timestamps must pass freshness checks.
+
+## Business-validity gate
+
+Market capitalization and price do not establish that a company is financially
+sound. Before a buy recommendation, require current, dated evidence that the
+issuer is not in bankruptcy proceedings, does not have an active delisting or
+trading-halt notice, and has no unresolved going-concern warning or material
+dilutive financing event. Exact lookback periods and financial-health thresholds
+remain TBD; missing evidence blocks a recommendation.
 
 FMP losers/screener output is discovery only (new Option A). Fetch entitled
 FMP quote/volume/history fields and recompute eligibility. A missing mandatory

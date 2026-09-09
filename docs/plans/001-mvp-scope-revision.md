@@ -99,8 +99,8 @@ data. No recommendation may claim a live, NBBO, consolidated-volume or
 executable quote based on this feed.
 
 Universe decision approved 2026-09-09: limit discovery to U.S.-listed common
-stocks with price strictly greater than $5 and market capitalization from
-$300 million through $10 billion.
+stocks with price strictly greater than $5 and market capitalization strictly
+greater than $100 million.
 These remove the current microcap/penny-stock failure mode. Average daily dollar
 volume, maximum spread, exact allowed exchanges and a reproducible common-stock
 classification source remain unresolved; their absence blocks eligibility and
@@ -113,7 +113,7 @@ rather than inferring market cap from price or manually cherry-picking symbols.
 seed universe after the FMP screener returned HTTP 402. This is an explicit,
 versioned allow-list, not a live claim about index constituents or market cap.
 Every member is manually reviewed as a U.S.-listed common stock at list revision
-time; list provenance, reviewer, revision date and the >$5/$300M–$10B policy are stored
+time; list provenance, reviewer, revision date and the >$5/>$100M policy are stored
 with each scan. FMP losers are intersected with this list and then checked against
 the >$5 discovery price floor. List maintenance/review cadence remains an open
 release decision. Missing liquidity/spread requirements still prevent eligibility.
@@ -126,6 +126,13 @@ manually reviewable catalogue snapshot from Ajaib's published list or explicit
 in-app user confirmation; preserve its source URL/retrieval time and revision
 with each scan. A ticker absent from, ambiguous in, or older than the approved
 snapshot stops before evidence/analysis.
+
+2026-09-09 policy revision: broaden the Ajaib-listed universe to price >$5 and
+market cap >$100M. This is only a discovery screen. It does not establish a
+valid business, so recommendation eligibility additionally requires dated
+evidence rejecting bankruptcy, delisting/halt, going-concern and material
+dilution concerns. Lookback periods and quantitative financial-health tests
+remain open decisions; absent evidence fails closed.
 
 Availability-source feasibility: Ajaib's public catalogue is visibly paginated
 through 66 pages and exposes symbol, price, change and market-cap values in the
@@ -469,6 +476,13 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     matching >$5 and $300M–$10B as a dated revision, without copying unrelated
     icon URLs or treating it as a security-type classification. Strict loading
     and tests reject malformed, duplicate and expired snapshots; FCUV is absent.
+    Policy revision: regenerate the derived symbol subset using price >$5 and
+    market cap >$100M before S13m-f. Preserve the original 739-entry response
+    count and reject zero/missing market-cap records. Validation of the supplied
+    source found 532 entries matching the new numerical screen. The committed
+    137-symbol snapshot remains the prior $300M–$10B derivation and is inactive
+    pending replacement by a reproducible import of the user-provided 739-entry
+    JSON; do not use it for the new policy.
   - [ ] S13m-f: Intersect raw manual-universe observations with a current Ajaib
     snapshot and persist match/snapshot revision. Test no-match and stale
     snapshot behavior; present availability separately from any investment claim.
