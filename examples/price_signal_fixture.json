@@ -1,0 +1,62 @@
+{
+  "evidence_packet": {
+    "symbol": "DEMO",
+    "event_id": "demo-event-1",
+    "as_of": "2026-09-09T10:00:00Z",
+    "evidence": [
+      {
+        "id": "demo-filing",
+        "event_id": "demo-event-1",
+        "kind": "earnings_release",
+        "source": "fixture",
+        "publisher": "Demo issuer",
+        "published_at": "2026-09-08T20:00:00Z",
+        "retrieved_at": "2026-09-09T09:00:00Z",
+        "version_available_at": "2026-09-08T20:00:00Z",
+        "availability_proof": "Offline fixture",
+        "content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "content_or_licensed_reference": "Synthetic evidence for the offline workflow.",
+        "primary": true
+      }
+    ],
+    "observations": [
+      {"kind": "BANKRUPTCY", "status": "CLEAR", "evidence_ids": ["demo-filing"], "assessed_at": "2026-09-09T10:00:00Z"},
+      {"kind": "DELISTING_OR_HALT", "status": "CLEAR", "evidence_ids": ["demo-filing"], "assessed_at": "2026-09-09T10:00:00Z"},
+      {"kind": "GOING_CONCERN", "status": "CLEAR", "evidence_ids": ["demo-filing"], "assessed_at": "2026-09-09T10:00:00Z"},
+      {"kind": "MATERIAL_DILUTION", "status": "CLEAR", "evidence_ids": ["demo-filing"], "assessed_at": "2026-09-09T10:00:00Z"},
+      {"kind": "EVENT_EXPLANATION", "status": "CLEAR", "evidence_ids": ["demo-filing"], "assessed_at": "2026-09-09T10:00:00Z"}
+    ]
+  },
+  "valuation": {
+    "symbol": "DEMO",
+    "as_of": "2026-09-09T10:00:00Z",
+    "evidence_ids": ["demo-filing"],
+    "bear_fair_value": "30.00",
+    "base_fair_value": "36.00",
+    "bull_fair_value": "42.00",
+    "margin_of_safety": "0.20",
+    "entry_zone_width": "0.05",
+    "formula_version": "illustrative-valuation-v1",
+    "assumptions": ["Synthetic valuation inputs; not an investment recommendation."]
+  },
+  "market_confirmation": {
+    "symbol": "DEMO",
+    "provider": "fixture",
+    "venue_limitation": "Synthetic quote; not an executable market price.",
+    "quote_as_of": "2026-09-09T10:00:00Z",
+    "checked_at": "2026-09-09T10:01:00Z",
+    "reference_price": "23.50",
+    "maximum_age_seconds": 120,
+    "conditions": [
+      {"name": "configured_volume_check", "passed": true, "detail": "Synthetic pass."}
+    ]
+  },
+  "tradingagents_review": {
+    "symbol": "DEMO",
+    "reviewed_at": "2026-09-09T10:02:00Z",
+    "status": "SUPPORTS",
+    "summary": "Synthetic cited review supports the supplied temporary-decline thesis.",
+    "report_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "evidence_ids": ["demo-filing"]
+  }
+}

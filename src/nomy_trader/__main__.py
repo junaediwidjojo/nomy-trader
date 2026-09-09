@@ -18,6 +18,7 @@ from nomy_trader.market.daily_recheck import recheck_daily
 from nomy_trader.providers.massive import MassiveClient, MassiveError
 from nomy_trader.providers.sec_edgar import SecEdgarClient, SecEdgarError
 from nomy_trader.providers.twelve_data import TwelveDataClient, TwelveDataError
+from nomy_trader.signals import PriceSignalFixture, run_price_signal_fixture
 from nomy_trader.storage.database import open_database, upgrade
 from nomy_trader.storage.rate_limit import RateLimited, reserve_credits, reserve_request
 from nomy_trader.storage.schema import scan_runs
@@ -36,6 +37,7 @@ def main() -> int:
             "ajaib-hints",
             "sec-filings",
             "counterfactual",
+            "price-signal",
         ],
     )
     parser.add_argument(
@@ -46,6 +48,12 @@ def main() -> int:
         type=Path,
         default=Path("examples/brze_12_scenario.json"),
         help="Explicit synthetic JSON input for counterfactual",
+    )
+    parser.add_argument(
+        "--price-signal-input",
+        type=Path,
+        default=Path("examples/price_signal_fixture.json"),
+        help="Explicit offline JSON input for price-signal",
     )
     parser.add_argument("--database", type=Path, default=Path("var/nomy-trader.sqlite"))
     parser.add_argument(
@@ -93,6 +101,21 @@ def main() -> int:
         print("Blocked conclusions:")
         for conclusion in scenario_result.blocked_conclusions:
             print(f"- {conclusion}")
+        return 0
+    if args.command == "price-signal":
+        try:
+            fixture = PriceSignalFixture.model_validate_json(
+                args.price_signal_input.read_text(encoding="utf-8")
+            )
+            price_signal_result = run_price_signal_fixture(fixture)
+        except (OSError, ValidationError, ValueError) as exc:
+            print(f"Price signal stopped: {exc}")
+            return 1
+        print(
+            json.dumps(
+                price_signal_result.model_dump(mode="json"), indent=2, sort_keys=True
+            )
+        )
         return 0
     args.database.parent.mkdir(parents=True, exist_ok=True)
     if args.database.exists():
