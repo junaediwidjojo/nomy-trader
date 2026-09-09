@@ -676,9 +676,9 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     rejected the originally selected `gpt-oss-20b` at chat completion with 404.
     A read-only model-list request showed the account can access
     `accounts/fireworks/models/glm-5p3-flash`; a minimal direct completion
-    verified that ID. The local sandbox configuration now uses that low-cost
-    model for both roles, one debate/risk round, disabled checkpoints and an
-    800-token cap. TradingAgents itself was installed only into its separate
+    verified that ID. The original `glm-5p3-flash` configuration used one
+    debate/risk round, disabled checkpoints and an 800-token cap, but returned
+    empty content after valid tool results. TradingAgents itself was installed only into its separate
     checkout virtual environment. Its full BRZE graph did not complete or write
     a result within the bounded run window, so the job was stopped to prevent
     further trial-credit use. No TradingAgents decision, evidence, plan or
@@ -730,9 +730,12 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
       diagnostic 2026-09-09: isolated BRZE market and fundamentals nodes both
       made valid tool calls and received their data, but
       `accounts/fireworks/models/glm-5p3-flash` returned empty content on the
-      following model turn. This is a model/tool-result compatibility failure,
-      not a Reddit or data-source failure. Test one alternate accessible model
-      with this two-turn trace before another four-symbol attempt.
+      following model turn. `deepseek-v4-flash-0731` emitted unparseable DSML
+      tool-call text. `gpt-oss-120b` made structured tool calls; an 800-token
+      cap consumed its budget in reasoning, while a 2,400-token configuration
+      produced non-empty reports. The later batch signals were BRZE `Hold`, OI
+      `Underweight`, INFY `Underweight`, and HPQ `Hold`. This is untrusted
+      supplementary research and cannot create a plan or formal outcome.
     - [ ] Recheck each survivor with the independently configured quote source.
       If quote freshness/coverage is insufficient, do not state an entry price.
       Partial: Twelve Data observed 2026-09-08 13:30 UTC reference closes of
