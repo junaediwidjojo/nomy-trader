@@ -41,10 +41,16 @@ class _RecentFilings(BaseModel):
     primaryDocument: tuple[str, ...]
 
 
+class _Filings(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="ignore")
+
+    recent: _RecentFilings
+
+
 class _Submissions(BaseModel):
     model_config = ConfigDict(frozen=True, extra="ignore")
 
-    filings: dict[str, _RecentFilings]
+    filings: _Filings
 
 
 class SecEdgarClient:
@@ -100,7 +106,7 @@ class SecEdgarClient:
         cik = self.cik_for_symbol(symbol)
         payload = self._get_json(f"{self.submissions_base_url}/CIK{cik}.json")
         try:
-            recent = _Submissions.model_validate(payload).filings["recent"]
+            recent = _Submissions.model_validate(payload).filings.recent
         except (KeyError, ValidationError) as error:
             raise SecEdgarError(
                 "SEC submissions response has an unsupported shape"

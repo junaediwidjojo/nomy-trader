@@ -614,9 +614,14 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     Resume: `providers.sec_edgar` now has a typed, read-only metadata adapter
     and `python -m nomy_trader sec-filings --symbol SYMBOL` command. Fixture
     tests verify ticker/CIK matching, requested-form narrowing, contact-header
-    validation and sanitized access failures. It has not contacted SEC because
-    `SEC_USER_AGENT` is not configured; after the user adds it, make one BRZE
-    metadata lookup and record the outcome before adding document retrieval.
+    validation and sanitized access failures. On 2026-09-09, after the user
+    configured the local contact value, one read-only BRZE lookup resolved CIK
+    0001676238 and returned 10 recent 8-K/10-Q/10-K metadata records, including
+    an 8-K filed 2026-09-08. The provider initially rejected the live response
+    because its optional `filings.files` field had not been modeled; the decoder
+    now reads only `filings.recent` and ignores unrelated fields. It did not
+    retrieve document content or create analysis, a plan or notification. Next:
+    approve bounded primary-document retrieval and evidence extraction.
 - [ ] S16: Add bounded evidence context construction; test conflicting sources,
   future/revised evidence and instruction-like retrieved text.
   - [x] S16a: Implement deterministic hard-block evaluation of a typed evidence
