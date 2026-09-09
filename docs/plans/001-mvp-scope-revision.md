@@ -325,10 +325,15 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     constraints and limited-venue data limitation in this ExecPlan and README.
     Completed: 2026-09-09 after user provisioned the ignored local key; no
     external request or source code change occurred in this documentation step.
-  - [ ] S12t-b: Implement a typed Twelve Data read-only client for the minimal
+  - [x] S12t-b: Implement a typed Twelve Data read-only client for the minimal
     price and daily-time-series endpoints, with sanitized failures and no key in
     URLs, logs or exceptions. Add fixture tests for malformed payloads,
     authentication, rate limits and timeout.
+    Completed: `providers.twelve_data` uses header authentication and a typed
+    one-credit `/quote` response. Six fixture tests cover malformed data,
+    authentication/server failure, 429, timeout and key redaction; targeted
+    Ruff and mypy pass. Persistent credit accounting and a real request remain
+    S12t-c through S12t-e.
   - [ ] S12t-c: Extend persistent quota accounting with explicit Twelve Data
     credits (eight per rolling minute and an account-verified daily ceiling).
     Test multi-credit reservation, restart persistence and no automatic retry.
