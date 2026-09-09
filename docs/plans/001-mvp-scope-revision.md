@@ -491,6 +491,11 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     Fixture tests cover approved status, declared-count integrity, >$5/>$100M
     boundaries and durable reload. Next action is the controlled local import of
     the supplied 739-entry attachment; do not use the legacy 137 file afterward.
+    Completed import: 2026-09-09 local SQLite import accepted the supplied
+    `APPROVED/OK` response, preserved all 739 source entries and derived 532
+    >$5/>$100M catalogue members under revision `ajaib-20260909T074453Z`.
+    It made no network request, common-stock classification, decline claim,
+    recommendation or notification.
   - [ ] S13m-f: Intersect raw manual-universe observations with a current Ajaib
     snapshot and persist match/snapshot revision. Test no-match and stale
     snapshot behavior; present availability separately from any investment claim.
