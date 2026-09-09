@@ -36,6 +36,11 @@ results are narrowed to this list and the >$5 price floor, while retaining raw
 source candidates in SQLite. Review the list before each policy release; it does
 not automatically prove current market cap, liquidity, or eligibility.
 
+Ajaib availability is a separate mandatory gate for the expanded $300M–$10B
+universe. Its public catalogue is paginated, but normal automated retrieval is
+Cloudflare-blocked; the application will accept only a dated, allowed official
+catalogue export or user confirmation and rejects candidates until one exists.
+
 ## Run the offline foundation
 
 ## Twelve Data registration for the approved recheck provider

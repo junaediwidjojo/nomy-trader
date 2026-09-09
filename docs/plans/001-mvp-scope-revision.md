@@ -99,8 +99,8 @@ data. No recommendation may claim a live, NBBO, consolidated-volume or
 executable quote based on this feed.
 
 Universe decision approved 2026-09-09: limit discovery to U.S.-listed common
-stocks with price strictly greater than $5 and market capitalization at least
-$2 billion.
+stocks with price strictly greater than $5 and market capitalization from
+$300 million through $10 billion.
 These remove the current microcap/penny-stock failure mode. Average daily dollar
 volume, maximum spread, exact allowed exchanges and a reproducible common-stock
 classification source remain unresolved; their absence blocks eligibility and
@@ -113,7 +113,7 @@ rather than inferring market cap from price or manually cherry-picking symbols.
 seed universe after the FMP screener returned HTTP 402. This is an explicit,
 versioned allow-list, not a live claim about index constituents or market cap.
 Every member is manually reviewed as a U.S.-listed common stock at list revision
-time; list provenance, reviewer, revision date and the >$5/$2B policy are stored
+time; list provenance, reviewer, revision date and the >$5/$300M–$10B policy are stored
 with each scan. FMP losers are intersected with this list and then checked against
 the >$5 discovery price floor. List maintenance/review cadence remains an open
 release decision. Missing liquidity/spread requirements still prevent eligibility.
@@ -126,6 +126,15 @@ manually reviewable catalogue snapshot from Ajaib's published list or explicit
 in-app user confirmation; preserve its source URL/retrieval time and revision
 with each scan. A ticker absent from, ambiguous in, or older than the approved
 snapshot stops before evidence/analysis.
+
+Availability-source feasibility: Ajaib's public catalogue is visibly paginated
+through 66 pages and exposes symbol, price, change and market-cap values in the
+browser-rendered view. A normal unattended HTTP request was blocked by Ajaib's
+Cloudflare protection on 2026-09-09. Do not bypass it, scrape around it, or log
+into the user's account. The MVP therefore needs a user-supplied exported list,
+explicit in-app confirmation, or a separately authorized official Ajaib API/feed
+before it can build a fresh complete snapshot. Until then, the Ajaib gate blocks
+all expanded-universe candidates.
 
 Persist a quota ledger; reserve a call before making it and conservatively count
 failed/ambiguous requests. All FMP consumers share this ledger, including retries,
@@ -455,6 +464,10 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     manually reviewable local source file. Require catalogue provenance,
     retrieval time and unambiguous U.S.-stock symbol match; test absent, expired
     and duplicate matches reject discovery. No account access or broker API.
+    Resume: official browser page is current and paginated, but normal HTTP
+    retrieval is Cloudflare-blocked. First obtain an allowed catalogue artifact;
+    do not create a partial snapshot from the first page or an old marketing
+    article and call it current.
   - [ ] S13m-f: Intersect raw manual-universe observations with a current Ajaib
     snapshot and persist match/snapshot revision. Test no-match and stale
     snapshot behavior; present availability separately from any investment claim.

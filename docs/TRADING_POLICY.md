@@ -16,7 +16,9 @@ explicit hypothesis, experiment, and approval.
 - Exclude OTC, penny stocks, leveraged/inverse ETFs, halted securities, and
   instruments without reliable point-in-time evidence.
 - Minimum price: strictly greater than $5 (user-approved 2026-09-09).
-- Minimum market capitalization: $2 billion (user-approved 2026-09-09).
+- Market capitalization: $300 million through $10 billion (user-approved
+  2026-09-09). A dated Ajaib catalogue snapshot is the availability source;
+  missing or ambiguous market-cap data blocks discovery.
 - Minimum average daily dollar volume and maximum spread: TBD. Until both are
   measurable from an approved source and thresholded, no candidate can pass
   eligibility or generate a recommendation.
