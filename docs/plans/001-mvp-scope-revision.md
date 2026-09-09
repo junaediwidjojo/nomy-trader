@@ -98,6 +98,16 @@ venue-coverage limitation. Reject stale, missing, mismatched or incomplete
 data. No recommendation may claim a live, NBBO, consolidated-volume or
 executable quote based on this feed.
 
+Universe decision approved 2026-09-09: limit discovery to U.S.-listed common
+stocks with price at least $10 and market capitalization at least $2 billion.
+These remove the current microcap/penny-stock failure mode. Average daily dollar
+volume, maximum spread, exact allowed exchanges and a reproducible common-stock
+classification source remain unresolved; their absence blocks eligibility and
+recommendations. First verify the FMP screener's account entitlement and fields
+with one quota-reserved request. If it cannot provide this universe, preserve
+the original losers list as discovery-only and request a provider/policy decision
+rather than inferring market cap from price or manually cherry-picking symbols.
+
 Persist a quota ledger; reserve a call before making it and conservatively count
 failed/ambiguous requests. All FMP consumers share this ledger, including retries,
 evidence and optional benchmarking calls. Gate each scan by remaining budget:
@@ -361,6 +371,16 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     was created.
 - [ ] S13: Implement deterministic candidate filters from approved parameters;
   verify boundary cases and no silent fallback for absent required fields.
+  - [ ] S13a: Make one quota-reserved, sanitized FMP screener entitlement check
+    for U.S. common-stock, price-at-least-$10 and market-cap-at-least-$2B fields.
+    Record response shape, filter semantics, call cost and coverage; do not
+    replace discovery until verified.
+  - [ ] S13b: Add versioned universe-policy configuration for the approved $10
+    and $2B floors, with required-but-unset average-dollar-volume/spread inputs.
+    Test that missing liquidity fields block eligibility.
+  - [ ] S13c: Switch discovery to the verified screener or deterministically
+    intersect candidates with it; test boundary inclusions/exclusions, common
+    stock classification and no results. Preserve source provenance.
 - [ ] S14: Implement event deduplication across scans and restarts; test repeats
   and materially new events under approved deduplication rules.
 - [ ] S15: Implement approved evidence-provider wrapper and immutable provenance;

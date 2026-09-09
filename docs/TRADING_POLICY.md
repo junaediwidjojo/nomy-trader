@@ -15,7 +15,11 @@ explicit hypothesis, experiment, and approval.
 - Maximum universe size initially: 50–100 symbols.
 - Exclude OTC, penny stocks, leveraged/inverse ETFs, halted securities, and
   instruments without reliable point-in-time evidence.
-- Minimum price, market capitalization, dollar volume, and maximum spread: TBD.
+- Minimum price: $10 (user-approved 2026-09-09).
+- Minimum market capitalization: $2 billion (user-approved 2026-09-09).
+- Minimum average daily dollar volume and maximum spread: TBD. Until both are
+  measurable from an approved source and thresholded, no candidate can pass
+  eligibility or generate a recommendation.
 
 ## Candidate trigger
 
@@ -128,4 +132,3 @@ The MVP has no execution capability or control over the external app. Paper-only
 remains a hard constraint for any future system execution until separately approved. Any future proposal for live trading requires
 a separate ADR, threat model, evaluation report, operational runbook, explicit
 user approval, and a minimal-capital rollout. It is outside the initial scope.
-
