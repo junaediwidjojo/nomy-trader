@@ -375,6 +375,12 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     for U.S. common-stock, price-at-least-$10 and market-cap-at-least-$2B fields.
     Record response shape, filter semantics, call cost and coverage; do not
     replace discovery until verified.
+    Resume: 2026-09-09 read-only check to `stable/company-screener` with the
+    approved $2B/$10/ETF-exclusion parameters returned HTTP 402 and no usable
+    response. FMP screener entitlement is unavailable; do not implement against
+    an undocumented or unaffordable endpoint. A price-only FMP-loser filter does
+    not establish market cap. Select and verify a separate market-cap source, or
+    explicitly revise the policy, before S13b/S13c.
   - [ ] S13b: Add versioned universe-policy configuration for the approved $10
     and $2B floors, with required-but-unset average-dollar-volume/spread inputs.
     Test that missing liquidity fields block eligibility.

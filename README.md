@@ -25,6 +25,11 @@ The current Massive end-of-day adapter remains deferred: its first real response
 was stale, with bars through 2026-09-04 while the required completed XNYS session
 was 2026-09-08. No plan or recommendation was created.
 
+The approved large-cap discovery policy requires price at least $10 and market
+capitalization at least $2 billion. FMP's screener endpoint returned HTTP 402 for
+this account, so this filter is currently a provider gate; the system must not
+mislabel price-only candidates as large-cap stocks.
+
 ## Run the offline foundation
 
 ## Twelve Data registration for the approved recheck provider
