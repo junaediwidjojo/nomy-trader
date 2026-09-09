@@ -672,13 +672,19 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     ID. Record only model/config versions, source date, output hash and explicit
     limitations. Do not copy the key, install its dependencies into nomy-trader,
     or import output into the evidence packet without cited primary sources.
-    Resume: local `.env` now has `openai_compatible`, Fireworks' documented
-    inference base URL, `accounts/fireworks/models/gpt-oss-20b` for both model
-    roles, one debate round, one risk round and checkpointing disabled. The API
-    key is deliberately absent. After the user adds only
-    `OPENAI_COMPATIBLE_API_KEY`, validate availability with one isolated BRZE
-    run; do not use a different model automatically if the trial entitlement
-    rejects it.
+    Resume: the user supplied the local key on 2026-09-09. Fireworks' model list
+    rejected the originally selected `gpt-oss-20b` at chat completion with 404.
+    A read-only model-list request showed the account can access
+    `accounts/fireworks/models/glm-5p3-flash`; a minimal direct completion
+    verified that ID. The local sandbox configuration now uses that low-cost
+    model for both roles, one debate/risk round, disabled checkpoints and an
+    800-token cap. TradingAgents itself was installed only into its separate
+    checkout virtual environment. Its full BRZE graph did not complete or write
+    a result within the bounded run window, so the job was stopped to prevent
+    further trial-credit use. No TradingAgents decision, evidence, plan or
+    recommendation exists. Next action: profile which dataflow/agent blocks the
+    graph and add per-node timeouts or a smaller explicitly approved comparison;
+    do not retry the full graph blindly.
   - [ ] S17c: Run the immediate manual analysis session in this order:
     - [ ] Re-run the local Ajaib filter and record the exact snapshot revision,
       criteria and resulting symbols.

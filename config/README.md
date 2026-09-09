@@ -46,15 +46,16 @@ OpenAI-compatible endpoint, add these local `.env` values:
 OPENAI_COMPATIBLE_API_KEY="paste-your-Fireworks-key-here"
 TRADINGAGENTS_LLM_PROVIDER="openai_compatible"
 TRADINGAGENTS_LLM_BACKEND_URL="https://api.fireworks.ai/inference/v1"
-TRADINGAGENTS_DEEP_THINK_LLM="accounts/fireworks/models/gpt-oss-20b"
-TRADINGAGENTS_QUICK_THINK_LLM="accounts/fireworks/models/gpt-oss-20b"
+TRADINGAGENTS_DEEP_THINK_LLM="accounts/fireworks/models/glm-5p3-flash"
+TRADINGAGENTS_QUICK_THINK_LLM="accounts/fireworks/models/glm-5p3-flash"
 TRADINGAGENTS_MAX_DEBATE_ROUNDS="1"
 TRADINGAGENTS_MAX_RISK_ROUNDS="1"
 TRADINGAGENTS_CHECKPOINT_ENABLED="false"
+TRADINGAGENTS_MAX_TOKENS="800"
 ```
 
 Do not put the Fireworks key in Git, source code, logs, a Telegram message, or
-the dedicated TradingAgents checkout. The default `gpt-oss-20b` choice is a
-low-cost serverless model for the one-round comparison; its availability still
-depends on your Fireworks account. The integration will verify it with one
-bounded sandbox run before it accepts output as supplementary research.
+the dedicated TradingAgents checkout. The default `glm-5p3-flash` choice is a
+low-cost serverless model verified available to the current Fireworks account.
+The integration will verify a bounded sandbox run before it accepts output as
+supplementary research.
