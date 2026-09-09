@@ -1,0 +1,14 @@
+{
+  "id": "brze-12-usd-what-if",
+  "symbol": "BRZE",
+  "as_of": "2026-09-09T15:57:10Z",
+  "base_observation_id": "ajaib-20260909T155710Z:BRZE",
+  "base_price": "24.68",
+  "hypothetical_price": "12",
+  "assumptions": [
+    "This is an educational counterfactual, not a forecast.",
+    "The latest manually supplied Ajaib snapshot price is the base observation.",
+    "Fundamentals and primary evidence are held unchanged only as an explicit assumption.",
+    "Volume, market conditions, peer moves and liquidity are unknown."
+  ]
+}

@@ -69,18 +69,34 @@ SQLite state by default and prints a machine-readable result.
 
 ## 7. Ordered implementation steps
 
-- [ ] C01: Define the approved BRZE $12 scenario inputs, base observation and
+- [x] C01: Define the approved BRZE $12 scenario inputs, base observation and
   unchanged-fundamentals assumption in a fixture; no provider request.
-- [ ] C02: Add typed scenario contracts and validation tests.
-- [ ] C03: Implement pure base-versus-scenario percentage and valuation-input
+  Completed: `examples/brze_12_scenario.json` uses the 2026-09-09 Ajaib $24.68
+  observation, BRZE $12 synthetic price, and explicit unknown volume/market/peer
+  conditions.
+- [x] C02: Add typed scenario contracts and validation tests.
+  Completed: frozen `ScenarioInput` and `ScenarioResult` reject invalid prices,
+  naive timestamps, unknown fields and a non-counterfactual price.
+- [x] C03: Implement pure base-versus-scenario percentage and valuation-input
   comparison; do not calculate an entry or recommended allocation.
-- [ ] C04: Add a CLI JSON-fixture runner with prominent synthetic labeling.
+  Completed: `run_scenario` calculates only the supplied price change and emits
+  two explicit blocked conclusions; valuation remains unimplemented.
+- [x] C04: Add a CLI JSON-fixture runner with prominent synthetic labeling.
+  Completed: `python -m nomy_trader counterfactual` reads an explicit JSON input
+  and starts output with `SCENARIO_ONLY`.
 - [ ] C05: Test malformed values, stale/missing base, unknown fields, attempted
   recommendation linkage and accidental observed/synthetic mixing.
-- [ ] C06: Run the BRZE $12 fixture, publish its `SCENARIO_ONLY` output and
+  Partial: malformed prices, naive timestamps and equal prices are covered. Base
+  freshness/linkage and synthetic-provider mixing are deferred because the
+  scenario intentionally has no persistence/provider boundary.
+- [x] C06: Run the BRZE $12 fixture, publish its `SCENARIO_ONLY` output and
   document which real-world evidence would be needed to convert it into research.
-- [ ] C07: Run formatting, linting, types, tests and scenarios; commit the
+  Completed: base $24.68 to $12 is -51.38%; output blocks all action and names
+  fresh quote, primary evidence and deterministic valuation/risk policy.
+- [x] C07: Run formatting, linting, types, tests and scenarios; commit the
   checked plan step with code and tests.
+  Completed: Ruff format/check excluding the pre-existing uncommitted script,
+  mypy `src`, pytest (141 passed), and 12/12 scenarios passed.
 
 ## 8. Test and validation plan
 

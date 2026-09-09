@@ -9,7 +9,9 @@ from pathlib import Path
 
 import sqlalchemy as sa
 from dotenv import load_dotenv
+from pydantic import ValidationError
 
+from nomy_trader.counterfactual import ScenarioInput, run_scenario
 from nomy_trader.market.ajaib_catalog import import_user_catalog
 from nomy_trader.market.ajaib_hints import run_reversal_hint_scan
 from nomy_trader.market.daily_recheck import recheck_daily
@@ -33,10 +35,17 @@ def main() -> int:
             "ajaib-import",
             "ajaib-hints",
             "sec-filings",
+            "counterfactual",
         ],
     )
     parser.add_argument(
         "--symbol", help="Default: first candidate in the latest saved FMP scan"
+    )
+    parser.add_argument(
+        "--scenario-input",
+        type=Path,
+        default=Path("examples/brze_12_scenario.json"),
+        help="Explicit synthetic JSON input for counterfactual",
     )
     parser.add_argument("--database", type=Path, default=Path("var/nomy-trader.sqlite"))
     parser.add_argument(
@@ -59,6 +68,32 @@ def main() -> int:
     if args.command == "sec-filings" and not sec_user_agent:
         print("SEC_USER_AGENT is missing from environment or local .env")
         return 1
+    if args.command == "counterfactual":
+        try:
+            scenario = ScenarioInput.model_validate_json(
+                args.scenario_input.read_text(encoding="utf-8")
+            )
+            scenario_result = run_scenario(scenario)
+        except (OSError, ValidationError, ValueError) as exc:
+            print(f"Scenario stopped: {exc}")
+            return 1
+        print(
+            f"{scenario_result.status} {scenario_result.symbol} "
+            f"hypothetical ${scenario_result.hypothetical_price}"
+        )
+        print(
+            f"Base observation: ${scenario_result.base_price} "
+            f"({scenario_result.base_observation_id})"
+        )
+        percentage_change = scenario_result.price_change_fraction * 100
+        print(f"Synthetic price change: {percentage_change:.2f}%")
+        print("Assumptions:")
+        for assumption in scenario_result.assumptions:
+            print(f"- {assumption}")
+        print("Blocked conclusions:")
+        for conclusion in scenario_result.blocked_conclusions:
+            print(f"- {conclusion}")
+        return 0
     args.database.parent.mkdir(parents=True, exist_ok=True)
     if args.database.exists():
         # SQLite backup safely includes committed WAL data before schema upgrade.
