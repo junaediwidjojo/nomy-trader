@@ -688,9 +688,15 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     the full graph usable. TradingAgents' default graph invokes several external
     dataflows (Yahoo Finance for stock, fundamentals, news and technical data;
     FRED for macro data; and Polymarket for prediction data), so the stalled
-    dependency remains unknown. Next action: profile one dataflow/node at a time
+    dependency remains unknown. A social-only trace on 2026-09-09 identified a
+    concrete delay: Reddit's `r/stocks` RSS search returned HTTP 429, after which
+    TradingAgents intentionally backed off for 71.6 seconds before one retry.
+    This is a per-IP rate limit, not an Indonesia reachability failure; WARP's
+    shared exit IP can still be rate limited. With the default three subreddits,
+    this can make a run appear hung. Next action: profile the remaining nodes
     with request timeouts, or run a smaller explicitly approved comparison that
-    excludes unavailable sources; do not retry the full graph blindly.
+    disables Reddit and other unavailable sources; do not retry the full graph
+    blindly.
   - [ ] S17c: Run the immediate manual analysis session in this order:
     - [ ] Re-run the local Ajaib filter and record the exact snapshot revision,
       criteria and resulting symbols.
