@@ -109,6 +109,6 @@ def _rejection_reasons(instrument: _RawInstrument) -> tuple[str, ...]:
         reasons.append("one_week_decline_not_at_least_4_percent")
     if instrument.price_1_month is None:
         reasons.append("missing_one_month_change")
-    elif instrument.price_1_month.pct_change <= 0:
-        reasons.append("one_month_change_not_positive")
+    elif instrument.price_1_month.pct_change <= -4:
+        reasons.append("one_month_decline_not_less_than_4_percent")
     return tuple(reasons)

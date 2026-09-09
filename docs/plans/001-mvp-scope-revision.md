@@ -563,14 +563,14 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     Approved initial experiment 2026-09-09, revised by user: price >$5, market
     cap >$100M, one-day percentage change <=-2%, one-week percentage change
     <=-4%, and
-    one-month percentage change >0%. These are a bounded local research
+    one-month percentage change >-4%. These are a bounded local research
     shortlist only. They do not resolve the candidate-trigger, liquidity,
     spread, business-validity, valuation or risk-policy TBDs.
     Completed: `market.ajaib_hints` validates the complete snapshot, records
     every rejection reason and writes an immutable `ajaib_reversal_hints` scan.
     The local CLI has no network behavior. Fixture tests cover all threshold
     boundaries and a live run on the 862-entry 2026-09-09 snapshot returned one
-    research hint under both the initial and revised thresholds: BRZE ($26.54;
+    research hint under the initial and subsequent revised thresholds: BRZE ($26.54;
     1d -12.5%, 1w -19.36%, 1m +0.04%). No
     eligibility pass, plan, analysis or notification was created.
   - [x] S13m-j: Provide a documented, local-only input location for a manually
@@ -706,7 +706,7 @@ external app or authorize a live broker integration.
 
 D10 — Ajaib ranked-feed proposal: the user approved the initial local-snapshot
 research thresholds on 2026-09-09, revised to `PCT_CHANGE_1_DAY <= -2%`,
-`PCT_CHANGE_1_WEEK <= -4%`, and `PCT_CHANGE_1_MONTH > 0`, alongside the
+`PCT_CHANGE_1_WEEK <= -4%`, and `PCT_CHANGE_1_MONTH > -4%`, alongside the
 already approved price/market-cap floors. Confirm an official data-access method
 and terms before any automated Ajaib adapter is built. Source-freshness limit,
 polling cadence, ranking depth and rate budget remain open. The local snapshot
