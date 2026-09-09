@@ -142,6 +142,18 @@ Do not require a new Ajaib crawl each day. This is deliberately incomplete
 coverage: the FMP-ranked feed can omit an Ajaib-listed stock with a smaller
 decline, and no code may claim full-universe scanning on the free plan.
 
+2026-09-09 proposed Ajaib discovery revision: use the public Ajaib US-stock
+ranking endpoint as a candidate hint only if Ajaib supplies an authorized,
+documented access method. The proposed request ranks by one-day percentage
+change and should then apply the local availability/business screen plus a
+short-term reversal hint: seven-day percentage change below an approved negative
+threshold and one-month percentage change above zero. This is not an
+eligibility rule, panic classification, buy signal, or substitute for FMP/Twelve
+Data freshness and evidence. A direct Python request with a normal browser user
+agent received HTTP 403 on 2026-09-09. Do not circumvent Cloudflare, use an
+authenticated account, replay browser cookies, or scrape around that control.
+Keep the FMP path active until an official method is approved and verified.
+
 Availability-source feasibility: Ajaib's public catalogue is visibly paginated
 through 66 pages and exposes symbol, price, change and market-cap values in the
 browser-rendered view. A normal unattended HTTP request was blocked by Ajaib's
@@ -520,6 +532,29 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     ranked global feed. Next action: obtain approval for a complete daily
     universe source, or explicitly accept FMP as an extreme-move-only alert;
     do not use the legacy 137-symbol JSON file.
+  - [ ] S13m-g: Verify an official, authorized Ajaib public-feed access method
+    for the one-day-change-ranked US-stock endpoint. Record endpoint terms,
+    authentication requirement, rate limits, response schema, source timestamp
+    and the exact status of a single harmless request. Stop on 401/403, terms
+    ambiguity, missing fields or inadequate freshness; never bypass access
+    controls or use account cookies.
+    Resume: a direct unauthenticated Python request with a standard browser
+    user agent returned HTTP 403 on 2026-09-09. No data was retained and no
+    retry/circumvention occurred. The next action is user-provided official API
+    documentation or permission from Ajaib, not implementation.
+  - [ ] S13m-h: If S13m-g verifies permitted access, add a typed, quota/rate
+    limited Ajaib ranking adapter that stores an immutable raw response and
+    derives hint-only candidates from the approved local catalogue. Require
+    symbol, price, one-day, one-week and one-month percentage-change fields and
+    source/retrieval timestamps. Test extra/missing fields, invalid numbers,
+    duplicate symbols, stale source data, access denial and rate limits.
+  - [ ] S13m-i: Add a versioned, deterministic reversal-hint filter after
+    S13m-h. It must require the approved sign and threshold semantics for the
+    seven-day and one-month percentage-change fields, price >$5, market cap
+    >$100M, and current catalogue membership. Persist every rejection reason.
+    Test boundary values and make clear that a hint cannot produce a plan or a
+    Telegram notification without all downstream eligibility, evidence, analyst
+    and risk checks.
 - [ ] S14: Implement event deduplication across scans and restarts; test repeats
   and materially new events under approved deduplication rules.
 - [ ] S15: Implement approved evidence-provider wrapper and immutable provenance;
@@ -638,6 +673,14 @@ recommendation-only safety agreement changes. Current worktree has no Git; futur
 resume notes must include commit IDs once available. Original paper-only rule
 constrains any future system execution; the MVP does not control the user's
 external app or authorize a live broker integration.
+
+D10 — Ajaib ranked-feed proposal: approve the exact data-access method and terms
+before any adapter is built. Confirm whether the intended condition means
+`PCT_CHANGE_1_WEEK < -3%` (rather than a raw price below $3), select the one-day
+decline threshold/ranking depth, source-freshness limit, polling cadence and
+rate budget. Approve whether this endpoint replaces FMP discovery or remains a
+hint while FMP/Twelve Data independently recheck a shortlist. Without this
+decision and authorized access, retain the existing FMP extreme-move-only path.
 
 Decision update 2026-09-08: user selected D05 portfolio limits unavailable,
 with per-recommendation checks only, and delegated D04 sizing recommendations
