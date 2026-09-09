@@ -76,3 +76,40 @@ packet, and changes any failure to an unavailable review. Do not point this
 adapter at TradingAgents' raw graph until its Yahoo Finance fallback timeout is
 fixed; the raw graph may make provider requests outside the curated-facts
 boundary.
+
+## Running TradingAgents from nomy-trader
+
+TradingAgents stays in its own checkout and virtual environment. Never run its
+batch script with nomy-trader's `.venv`.
+
+The Yahoo Finance fundamentals call is bounded by
+`YFINANCE_REQUEST_TIMEOUT_SECONDS` (default: `20`). A timeout becomes an
+unavailable fundamentals result for that symbol; it does not make the batch
+wait indefinitely.
+
+Run a small ranked batch, beginning with one to four symbols:
+
+```sh
+export PATH="/private/tmp/nomy-tooling/bin:$PATH"
+
+cd /Users/junaediwidjojo/HobbyProjects/nomy-trader
+set -a && source .env && set +a
+export YFINANCE_REQUEST_TIMEOUT_SECONDS=20
+
+cd /Users/junaediwidjojo/HobbyProjects/TradingAgents
+uv run python ../nomy-trader/scripts/run_tradingagents_batch.py BRZE AHCO XE CHWY
+```
+
+On this host, if `uv` is unavailable, use TradingAgents' own interpreter while
+keeping the rest of the command unchanged:
+
+```sh
+/Users/junaediwidjojo/HobbyProjects/TradingAgents/.venv/bin/python \
+  ../nomy-trader/scripts/run_tradingagents_batch.py BRZE
+```
+
+The script writes a compact batch status to
+`nomy-trader/var/tradingagents_batch_results.json` and complete reports under
+`~/.tradingagents/logs/nomy-trader-session/reports/`. Both paths are local and
+ignored by Git. Treat reports as supplementary, untrusted commentary; only
+primary evidence and deterministic checks can promote a signal.

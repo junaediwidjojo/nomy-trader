@@ -748,6 +748,15 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
       `curl_cffi` request had no effective timeout. LangGraph then waited on the
       unfinished worker. Add a bounded Yahoo Finance timeout/fallback or exclude
       the fundamentals tool before another batch attempt; do not rerun blindly.
+      Completed 2026-09-10 in the separate TradingAgents checkout:
+      `yf_with_timeout` now bounds `Ticker.info` with a daemon-thread
+      wall-clock guard (20 seconds by default, configurable through
+      `YFINANCE_REQUEST_TIMEOUT_SECONDS`). A timeout maps to the existing typed
+      no-fundamentals path, so one stalled Yahoo request cannot freeze the graph.
+      A direct stalled-worker smoke test passed. TradingAgents' isolated venv
+      currently lacks pytest and Ruff, so the focused pytest file was added for
+      a fully provisioned environment and the changed files were linted using
+      nomy-trader's tooling. See `config/README.md` for the exact invocation.
       A bounded BRZE market-only run then completed with `Hold` and a populated
       technical report. Its final portfolio decision nevertheless inserted
       unsupported fundamental claims while no fundamentals analyst was enabled.
