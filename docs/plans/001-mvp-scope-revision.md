@@ -659,6 +659,13 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     ID. Record only model/config versions, source date, output hash and explicit
     limitations. Do not copy the key, install its dependencies into nomy-trader,
     or import output into the evidence packet without cited primary sources.
+    Resume: local `.env` now has `openai_compatible`, Fireworks' documented
+    inference base URL, `accounts/fireworks/models/gpt-oss-20b` for both model
+    roles, one debate round, one risk round and checkpointing disabled. The API
+    key is deliberately absent. After the user adds only
+    `OPENAI_COMPATIBLE_API_KEY`, validate availability with one isolated BRZE
+    run; do not use a different model automatically if the trial entitlement
+    rejects it.
 - [ ] S18: Implement approved deterministic valuation formulas with explicit
   assumptions; verify arithmetic and invalid valuation rejection.
 - [ ] S19: Implement approved advisory sizing and risk applicability policy;
