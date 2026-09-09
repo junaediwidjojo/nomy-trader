@@ -22,6 +22,19 @@ recommendation in SQLite, and notify the user through Telegram. The system ends
 at notification. The user independently chooses whether, where, at what price,
 and at what size to buy in an unrelated app. Delivery is not execution.
 
+### 2026-09-09 immediate analysis session
+
+The user wants to make a manual buy decision today using the available local
+Ajaib snapshot, SEC filing metadata and a bounded TradingAgents/Fireworks
+comparison. This is an ad-hoc research session, not evidence that the MVP is
+complete or that an automated strategy is safe. Its deliverable is a concise,
+cited manual-review report for each surviving candidate with one of three
+outcomes: `REJECT`, `WATCH`, or `MANUAL_BUY_CANDIDATE`. A candidate cannot be
+called a buy candidate until current primary-source evidence, a fresh independent
+price observation, explicit uncertainty and a deterministic risk/valuation review
+are present. No order, sell instruction, account action, position tracking or
+profit claim is included.
+
 ## 2. Scope and explicit non-goals
 
 Include FMP free-tier discovery, deterministic eligibility, bounded AI analysis,
@@ -666,6 +679,23 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     `OPENAI_COMPATIBLE_API_KEY`, validate availability with one isolated BRZE
     run; do not use a different model automatically if the trial entitlement
     rejects it.
+  - [ ] S17c: Run the immediate manual analysis session in this order:
+    - [ ] Re-run the local Ajaib filter and record the exact snapshot revision,
+      criteria and resulting symbols.
+    - [ ] Retrieve filing metadata for each candidate through SEC EDGAR; select
+      a bounded, relevant current filing for primary-source review.
+    - [ ] Build a cited evidence packet and apply the deterministic hard-block
+      gate. Reject candidates lacking an explainable event or required evidence.
+    - [ ] Run one isolated, one-round TradingAgents/Fireworks comparison only
+      for each gate survivor. Preserve its output outside nomy-trader's SQLite;
+      treat it as untrusted supplementary commentary.
+    - [ ] Recheck each survivor with the independently configured quote source.
+      If quote freshness/coverage is insufficient, do not state an entry price.
+    - [ ] Produce the `REJECT`/`WATCH`/`MANUAL_BUY_CANDIDATE` report. A manual
+      buy candidate must state supporting and opposing evidence, uncertainty,
+      a maximum entry only if deterministically supported, and why it remains
+      subject to the user's independent decision. No sell recommendation,
+      quantity, order or message delivery is permitted in this session.
 - [ ] S18: Implement approved deterministic valuation formulas with explicit
   assumptions; verify arithmetic and invalid valuation rejection.
 - [ ] S19: Implement approved advisory sizing and risk applicability policy;
