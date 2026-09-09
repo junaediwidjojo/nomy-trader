@@ -74,11 +74,16 @@ def main() -> int:
                 f"from {scan.catalogue_revision}"
             )
             for candidate in scan.candidates:
+                month = (
+                    str(candidate.one_month_percent)
+                    if candidate.one_month_percent is not None
+                    else "unavailable"
+                )
                 print(
                     f"{candidate.symbol} | ${candidate.price} | "
                     f"1d {candidate.one_day_percent}% | "
                     f"1w {candidate.one_week_percent}% | "
-                    f"1m {candidate.one_month_percent}%"
+                    f"1m {month}%"
                 )
             print(scan.limitation)
             return 0

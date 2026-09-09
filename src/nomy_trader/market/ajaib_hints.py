@@ -24,7 +24,7 @@ class AjaibReversalHint(Contract):
     market_cap: int = Field(gt=100_000_000)
     one_day_percent: Finite
     one_week_percent: Finite
-    one_month_percent: Finite
+    one_month_percent: Finite | None
 
 
 class AjaibHintRejection(Contract):
@@ -59,7 +59,6 @@ def run_reversal_hint_scan(engine: Engine, now: datetime) -> AjaibReversalHintSc
             continue
         assert instrument.price_1_day is not None
         assert instrument.price_1_week is not None
-        assert instrument.price_1_month is not None
         candidates.append(
             AjaibReversalHint(
                 symbol=instrument.code,
@@ -68,7 +67,11 @@ def run_reversal_hint_scan(engine: Engine, now: datetime) -> AjaibReversalHintSc
                 market_cap=instrument.market_cap,
                 one_day_percent=instrument.price_1_day.pct_change,
                 one_week_percent=instrument.price_1_week.pct_change,
-                one_month_percent=instrument.price_1_month.pct_change,
+                one_month_percent=(
+                    instrument.price_1_month.pct_change
+                    if instrument.price_1_month is not None
+                    else None
+                ),
             )
         )
     scan = AjaibReversalHintScan(
@@ -107,8 +110,4 @@ def _rejection_reasons(instrument: _RawInstrument) -> tuple[str, ...]:
         reasons.append("missing_one_week_change")
     elif instrument.price_1_week.pct_change > -4:
         reasons.append("one_week_decline_not_at_least_4_percent")
-    if instrument.price_1_month is None:
-        reasons.append("missing_one_month_change")
-    elif instrument.price_1_month.pct_change <= -4:
-        reasons.append("one_month_decline_not_less_than_4_percent")
     return tuple(reasons)
