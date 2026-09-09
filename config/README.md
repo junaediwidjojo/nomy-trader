@@ -13,3 +13,16 @@ The application validates the approved status and count before storing an
 immutable local SQLite snapshot. A supplied snapshot is a discovery hint and
 availability reference. It does not prove that an order is possible in Ajaib,
 that a security is a common stock, or that it is suitable to buy.
+
+Import a newly saved response with:
+
+```text
+uv run python -m nomy_trader ajaib-import
+```
+
+Create the local, non-trading research shortlist from the latest imported
+snapshot with:
+
+```text
+uv run python -m nomy_trader ajaib-hints
+```

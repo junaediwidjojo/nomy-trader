@@ -10,6 +10,8 @@ from pathlib import Path
 import sqlalchemy as sa
 from dotenv import load_dotenv
 
+from nomy_trader.market.ajaib_catalog import import_user_catalog
+from nomy_trader.market.ajaib_hints import run_reversal_hint_scan
 from nomy_trader.market.daily_recheck import recheck_daily
 from nomy_trader.providers.massive import MassiveClient, MassiveError
 from nomy_trader.providers.twelve_data import TwelveDataClient, TwelveDataError
@@ -22,11 +24,19 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Recheck a logged FMP candidate using daily bars"
     )
-    parser.add_argument("command", choices=["recheck", "twelve-quote"])
+    parser.add_argument(
+        "command", choices=["recheck", "twelve-quote", "ajaib-import", "ajaib-hints"]
+    )
     parser.add_argument(
         "--symbol", help="Default: first candidate in the latest saved FMP scan"
     )
     parser.add_argument("--database", type=Path, default=Path("var/nomy-trader.sqlite"))
+    parser.add_argument(
+        "--input",
+        type=Path,
+        default=Path("config/private_ajaib_us_stock.json"),
+        help="Complete manually supplied Ajaib JSON response for ajaib-import",
+    )
     args = parser.parse_args()
     load_dotenv(Path.cwd() / ".env", override=False)
     key = os.getenv("MASSIVE_API_KEY", "")
@@ -50,6 +60,28 @@ def main() -> int:
     engine = open_database(args.database)
     try:
         upgrade(engine)
+        if args.command == "ajaib-import":
+            snapshot = import_user_catalog(engine, args.input, datetime.now(UTC))
+            print(
+                f"CATALOGUE_IMPORTED {snapshot.catalog_entry_count} source entries | "
+                f"{len(snapshot.symbols)} working symbols | {snapshot.revision}"
+            )
+            return 0
+        if args.command == "ajaib-hints":
+            scan = run_reversal_hint_scan(engine, datetime.now(UTC))
+            print(
+                f"RESEARCH_HINTS {len(scan.candidates)} of {scan.source_entries} "
+                f"from {scan.catalogue_revision}"
+            )
+            for candidate in scan.candidates:
+                print(
+                    f"{candidate.symbol} | ${candidate.price} | "
+                    f"1d {candidate.one_day_percent}% | "
+                    f"1w {candidate.one_week_percent}% | "
+                    f"1m {candidate.one_month_percent}%"
+                )
+            print(scan.limitation)
+            return 0
         symbol = args.symbol
         if symbol is None:
             with engine.connect() as conn:

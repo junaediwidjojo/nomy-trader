@@ -553,23 +553,36 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     symbol, price, one-day, one-week and one-month percentage-change fields and
     source/retrieval timestamps. Test extra/missing fields, invalid numbers,
     duplicate symbols, stale source data, access denial and rate limits.
-  - [ ] S13m-i: Add a versioned, deterministic reversal-hint filter after
+  - [x] S13m-i: Add a versioned, deterministic reversal-hint filter after
     S13m-h. It must require the approved sign and threshold semantics for the
     seven-day and one-month percentage-change fields, price >$5, market cap
     >$100M, and current catalogue membership. Persist every rejection reason.
     Test boundary values and make clear that a hint cannot produce a plan or a
     Telegram notification without all downstream eligibility, evidence, analyst
     and risk checks.
-  - [ ] S13m-j: Provide a documented, local-only input location for a manually
+    Approved initial experiment 2026-09-09: price >$5, market cap >$100M,
+    one-day percentage change <=-5%, one-week percentage change <=-3%, and
+    one-month percentage change >0%. These are a bounded local research
+    shortlist only. They do not resolve the candidate-trigger, liquidity,
+    spread, business-validity, valuation or risk-policy TBDs.
+    Completed: `market.ajaib_hints` validates the complete snapshot, records
+    every rejection reason and writes an immutable `ajaib_reversal_hints` scan.
+    The local CLI has no network behavior. Fixture tests cover all threshold
+    boundaries and a live run on the 862-entry 2026-09-09 snapshot returned one
+    research hint: BRZE ($26.54; 1d -12.5%, 1w -19.36%, 1m +0.04%). No
+    eligibility pass, plan, analysis or notification was created.
+  - [x] S13m-j: Provide a documented, local-only input location for a manually
     supplied Ajaib US-stock response and an explicit import command. The command
     must validate the complete response and write a new immutable SQLite
     revision; it must make no network request. Test invalid/missing input and
     document that the ignored local file is not committed.
-    Resume: `config/private_ajaib_us_stock.json` is the designated ignored
+    Completed: `config/private_ajaib_us_stock.json` is the designated ignored
     location. The 2026-09-09 user-supplied 862-record response includes
     `price_1_day`, `price_1_week` and `price_1_month`; import it before adding
-    any use of those fields. S13m-h/i remain required before it replaces FMP
-    discovery or creates reversal hints.
+    use of those fields. `python -m nomy_trader ajaib-import` validates/imports
+    it without a network request; invalid local input stops with a failure.
+    The snapshot remains a local hint input and does not authorize automatic
+    Ajaib access or replace required downstream checks.
 - [ ] S14: Implement event deduplication across scans and restarts; test repeats
   and materially new events under approved deduplication rules.
 - [ ] S15: Implement approved evidence-provider wrapper and immutable provenance;
@@ -689,13 +702,13 @@ resume notes must include commit IDs once available. Original paper-only rule
 constrains any future system execution; the MVP does not control the user's
 external app or authorize a live broker integration.
 
-D10 — Ajaib ranked-feed proposal: approve the exact data-access method and terms
-before any adapter is built. Confirm whether the intended condition means
-`PCT_CHANGE_1_WEEK < -3%` (rather than a raw price below $3), select the one-day
-decline threshold/ranking depth, source-freshness limit, polling cadence and
-rate budget. Approve whether this endpoint replaces FMP discovery or remains a
-hint while FMP/Twelve Data independently recheck a shortlist. Without this
-decision and authorized access, retain the existing FMP extreme-move-only path.
+D10 — Ajaib ranked-feed proposal: the user approved the initial local-snapshot
+research thresholds on 2026-09-09: `PCT_CHANGE_1_DAY <= -5%`,
+`PCT_CHANGE_1_WEEK <= -3%`, and `PCT_CHANGE_1_MONTH > 0`, alongside the
+already approved price/market-cap floors. Confirm an official data-access method
+and terms before any automated Ajaib adapter is built. Source-freshness limit,
+polling cadence, ranking depth and rate budget remain open. The local snapshot
+remains a hint while FMP/Twelve Data independently recheck a shortlist.
 
 Decision update 2026-09-08: user selected D05 portfolio limits unavailable,
 with per-recommendation checks only, and delegated D04 sizing recommendations

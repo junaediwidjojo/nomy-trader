@@ -9,7 +9,7 @@ import sqlalchemy as sa
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 from sqlalchemy import Engine
 
-from nomy_trader.domain.models import Contract, Positive, Text, Timestamp
+from nomy_trader.domain.models import Contract, Finite, Positive, Text, Timestamp
 from nomy_trader.storage.schema import scan_runs
 
 
@@ -59,11 +59,18 @@ class _RawModel(BaseModel):
     model_config = ConfigDict(frozen=True, extra="ignore")
 
 
+class _RawPriceChange(_RawModel):
+    pct_change: Finite
+
+
 class _RawInstrument(_RawModel):
     code: Text = Field(pattern=r"^[A-Z0-9][A-Z0-9.\-]{0,19}$")
     name: Text
     price: Positive
     market_cap: int = Field(ge=0)
+    price_1_day: _RawPriceChange | None = None
+    price_1_week: _RawPriceChange | None = None
+    price_1_month: _RawPriceChange | None = None
 
 
 class _RawResult(_RawModel):
@@ -145,4 +152,44 @@ def load_latest_imported_catalog(engine: Engine) -> AjaibCatalogSnapshot:
             payload = json.loads(row[0])
             if payload.get("kind") == "ajaib_catalog_import":
                 return AjaibCatalogSnapshot.model_validate(payload["snapshot"])
+    raise ValueError("no imported Ajaib catalogue is available")
+
+
+def load_latest_imported_response(engine: Engine) -> _RawResponse:
+    with engine.connect() as connection:
+        rows = connection.execute(
+            sa.select(scan_runs.c.payload).order_by(scan_runs.c.started_at.desc())
+        )
+        for row in rows:
+            payload = json.loads(row[0])
+            if payload.get("kind") == "ajaib_catalog_import":
+                try:
+                    return _RawResponse.model_validate(payload["raw_catalog"])
+                except (KeyError, ValidationError):
+                    raise ValueError(
+                        "imported Ajaib catalogue response is invalid"
+                    ) from None
+    raise ValueError("no imported Ajaib catalogue is available")
+
+
+def load_latest_imported_snapshot_and_response(
+    engine: Engine,
+) -> tuple[AjaibCatalogSnapshot, _RawResponse]:
+    """Load one immutable import without mixing its provenance and raw rows."""
+    with engine.connect() as connection:
+        rows = connection.execute(
+            sa.select(scan_runs.c.payload).order_by(scan_runs.c.started_at.desc())
+        )
+        for row in rows:
+            payload = json.loads(row[0])
+            if payload.get("kind") == "ajaib_catalog_import":
+                try:
+                    return (
+                        AjaibCatalogSnapshot.model_validate(payload["snapshot"]),
+                        _RawResponse.model_validate(payload["raw_catalog"]),
+                    )
+                except (KeyError, ValidationError):
+                    raise ValueError(
+                        "imported Ajaib catalogue response is invalid"
+                    ) from None
     raise ValueError("no imported Ajaib catalogue is available")
