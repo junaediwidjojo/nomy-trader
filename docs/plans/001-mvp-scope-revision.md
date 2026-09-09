@@ -414,7 +414,7 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     matches: FMP's 50 most extreme decliners were all outside the list. This
     proves that intersecting a top-50 movers feed cannot discover a large-cap
     decline reliably; it created no recommendation or notification.
-  - [ ] S13m-c: Verify FMP daily-history access for a bounded sample of seed
+  - [x] S13m-c: Verify FMP daily-history access for a bounded sample of seed
     symbols and document per-symbol cost, latest-session freshness and response
     size. If viable within the 250-call daily budget, calculate and persist raw
     one-session returns across the manual universe in small quota-reserved
@@ -423,9 +423,16 @@ Until Git exists, do not claim a commit; setup is the first approved work step.
     `market.universe_scan`; each symbol reserves a quota call before FMP history
     retrieval, rejects stale/incomplete history, calculates only raw one-session
     return, and persists a scan record. Targeted Ruff, mypy and two fixture tests
-    pass. Next action: run a maximum-three-symbol live sample using the existing
-    `fmp-manual-2026-09-09` shared local quota window, then record its field
-    coverage/freshness and result. Do not scan all 47 until that succeeds.
+    pass. 2026-09-09 live sample used three quota-reserved daily-history calls;
+    all returned latest completed XNYS session 2026-09-08: AAPL -1.17% (close
+    316.22, volume 35,028,027), MSFT -1.15% (493.95, 18,684,730), NVDA -2.01%
+    (225.73, 118,984,635). FMP's history endpoint delivers substantially more
+    than the two required rows, so each call is capped to one symbol and only
+    the two latest dated entries are retained in the raw scan result. Provider
+    dashboard billing remains unverified; local accounting records three calls.
+  - [ ] S13m-d: Run one 47-symbol, quota-reserved raw-return scan of the seed
+    universe. Present the observed declines without a panic threshold, and log
+    all rejected/stale symbols. Do not label any result eligible or send it.
 - [ ] S14: Implement event deduplication across scans and restarts; test repeats
   and materially new events under approved deduplication rules.
 - [ ] S15: Implement approved evidence-provider wrapper and immutable provenance;
