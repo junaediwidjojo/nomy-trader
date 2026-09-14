@@ -95,6 +95,14 @@ class _RawResponse(_RawModel):
         return self
 
 
+def validate_catalog_payload(payload: object) -> _RawResponse:
+    """Validate a live or saved Ajaib US-stock screener response."""
+    try:
+        return _RawResponse.model_validate(payload)
+    except ValidationError as exc:
+        raise ValueError("Ajaib catalogue response is invalid") from exc
+
+
 def import_user_catalog(
     engine: Engine, path: Path, now: datetime
 ) -> AjaibCatalogSnapshot:
@@ -104,8 +112,8 @@ def import_user_catalog(
     now = now.astimezone(UTC)
     try:
         raw_payload = json.loads(path.read_text())
-        raw = _RawResponse.model_validate(raw_payload)
-    except (OSError, ValueError, ValidationError):
+        raw = validate_catalog_payload(raw_payload)
+    except OSError:
         raise ValueError("Ajaib catalogue response is invalid") from None
     symbols = tuple(
         instrument.code

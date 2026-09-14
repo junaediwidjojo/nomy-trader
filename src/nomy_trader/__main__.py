@@ -11,8 +11,15 @@ import sqlalchemy as sa
 from dotenv import load_dotenv
 from pydantic import ValidationError
 
+from nomy_trader.analysis.compare import compare_profiles, print_compare_table
+from nomy_trader.analysis.pipeline import format_price, run_analyze_pipeline
 from nomy_trader.counterfactual import ScenarioInput, run_scenario
 from nomy_trader.market.ajaib_catalog import import_user_catalog
+from nomy_trader.providers.ajaib_us_stock import (
+    AjaibUsStockAuthError,
+    AjaibUsStockError,
+    fetch_us_stock_catalog_to_file,
+)
 from nomy_trader.market.ajaib_hints import run_reversal_hint_scan
 from nomy_trader.market.daily_recheck import recheck_daily
 from nomy_trader.providers.massive import MassiveClient, MassiveError
@@ -34,10 +41,14 @@ def main() -> int:
             "recheck",
             "twelve-quote",
             "ajaib-import",
+            "ajaib-fetch",
             "ajaib-hints",
             "sec-filings",
             "counterfactual",
             "price-signal",
+            "analyze",
+            "run",
+            "compare-profiles",
         ],
     )
     parser.add_argument(
@@ -65,8 +76,40 @@ def main() -> int:
     parser.add_argument(
         "--top",
         type=int,
-        default=20,
-        help="Number of ranked Ajaib hints to print (default: 20)",
+        default=12,
+        help="Number of ranked Ajaib hints to print or analyze (default: 12)",
+    )
+    parser.add_argument(
+        "--symbols",
+        nargs="+",
+        help="Explicit symbols for analyze; skips top-N hint selection",
+    )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=300,
+        help="Per-symbol TradingAgents timeout in seconds (default: 300)",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=Path("var/screen_analyze_results.json"),
+        help="JSON output path for analyze",
+    )
+    parser.add_argument(
+        "--skip-catalog-import",
+        action="store_true",
+        help="Use the latest SQLite catalog instead of importing --input",
+    )
+    parser.add_argument(
+        "--force-reanalyze",
+        action="store_true",
+        help="Ignore TradingAgents cache and rerun live analysis",
+    )
+    parser.add_argument(
+        "--fetch-catalog",
+        action="store_true",
+        help="Fetch Ajaib US-stock JSON via session cookie before import/run",
     )
     args = parser.parse_args()
     load_dotenv(Path.cwd() / ".env", override=False)
@@ -78,6 +121,9 @@ def main() -> int:
         return 1
     if args.command == "twelve-quote" and not twelve_key:
         print("TWELVE_DATA_API_KEY is missing from environment or local .env")
+        return 1
+    if args.command == "compare-profiles" and not args.symbol:
+        print("Supply --symbol for profile comparison")
         return 1
     if args.command == "sec-filings" and not sec_user_agent:
         print("SEC_USER_AGENT is missing from environment or local .env")
@@ -123,6 +169,14 @@ def main() -> int:
             )
         )
         return 0
+    if args.command == "ajaib-fetch":
+        try:
+            count = fetch_us_stock_catalog_to_file(args.input)
+        except (AjaibUsStockAuthError, AjaibUsStockError, OSError) as exc:
+            print(f"Ajaib fetch stopped: {exc}")
+            return 1
+        print(f"AJAIB_FETCHED {count} entries -> {args.input}")
+        return 0
     args.database.parent.mkdir(parents=True, exist_ok=True)
     if args.database.exists():
         # SQLite backup safely includes committed WAL data before schema upgrade.
@@ -136,6 +190,128 @@ def main() -> int:
     engine = open_database(args.database)
     try:
         upgrade(engine)
+        if args.command == "compare-profiles":
+            profiles = ("two_round_debate", "high_model_one_round")
+
+            def _compare_progress(
+                index: int, total: int, profile: str, symbol: str
+            ) -> None:
+                print(
+                    f"COMPARE {index}/{total} {symbol} profile={profile}...",
+                    flush=True,
+                )
+
+            try:
+                compare_run = compare_profiles(
+                    args.symbol,
+                    profiles,
+                    timeout_seconds=max(args.timeout, 420),
+                    on_progress=_compare_progress,
+                )
+            except (OSError, ValueError, FileNotFoundError) as exc:
+                print(f"Compare stopped: {exc}")
+                return 1
+            print_compare_table(compare_run)
+            print(f"Saved {compare_run.output_path}")
+            print(compare_run.limitation)
+            return 0
+        if args.command in {"analyze", "run"}:
+            if args.fetch_catalog:
+                try:
+                    count = fetch_us_stock_catalog_to_file(args.input)
+                except (AjaibUsStockAuthError, AjaibUsStockError, OSError) as exc:
+                    print(f"Ajaib fetch stopped: {exc}")
+                    return 1
+                print(f"AJAIB_FETCHED {count} entries -> {args.input}", flush=True)
+            import_path = None if args.skip_catalog_import else args.input
+            if import_path is not None and not import_path.exists():
+                print(f"Ajaib input missing: {import_path}")
+                return 1
+
+            def _progress(index: int, total: int, symbol: str, mode: str) -> None:
+                labels = {
+                    "primary": "TRADINGAGENTS",
+                    "confirm": "CONFIRM-BUY",
+                }
+                print(
+                    f"{labels.get(mode, mode)} {index}/{total} {symbol}...",
+                    flush=True,
+                )
+
+            try:
+                if import_path is not None:
+                    print(f"IMPORTING {import_path}", flush=True)
+                analyze_run = run_analyze_pipeline(
+                    engine,
+                    now=datetime.now(UTC),
+                    top=args.top,
+                    symbols=tuple(args.symbols) if args.symbols else None,
+                    import_path=import_path,
+                    output_path=args.output,
+                    timeout_seconds=args.timeout,
+                    on_progress=_progress,
+                    force_refresh=args.force_reanalyze,
+                )
+            except (OSError, ValueError, FileNotFoundError) as exc:
+                print(f"Run stopped: {exc}")
+                return 1
+            if analyze_run.catalog_imported:
+                print(
+                    f"CATALOGUE_IMPORTED {analyze_run.catalog_entry_count} entries",
+                    flush=True,
+                )
+            print(
+                f"SCREENED {analyze_run.candidates_screened} decline candidates",
+                flush=True,
+            )
+            print(
+                f"ANALYZE_COMPLETE {analyze_run.symbols_analyzed} symbols | "
+                f"{analyze_run.catalogue_revision} | "
+                f"cache_hits={analyze_run.cache_hits} "
+                f"live_runs={analyze_run.cache_misses} "
+                f"buy_confirmations={analyze_run.buy_confirmations_run} "
+                f"(ttl={analyze_run.cache_ttl_hours}h)"
+            )
+            print(
+                f"{'Rank':<5} {'Symbol':<8} {'Signal':<12} {'Confirm':<12} "
+                f"{'Src':<6} {'Ajaib':<10} {'Target':<10} {'Entry hint'}"
+            )
+            for item in analyze_run.results:
+                screened = item.screened
+                rank = str(screened.rank) if screened is not None else "-"
+                ajaib = format_price(screened.ajaib_price if screened else None)
+                target = format_price(item.price_target)
+                source = item.source or "-"
+                confirm = "-"
+                if item.confirmatory is not None:
+                    confirm = item.confirmatory.signal or item.confirmatory.error or "-"
+                    if len(str(confirm)) > 12:
+                        confirm = str(confirm)[:9] + "..."
+                entry = item.entry_hint or item.executive_summary or item.error or "-"
+                if len(entry) > 56:
+                    entry = entry[:53] + "..."
+                print(
+                    f"{rank:<5} {item.symbol:<8} {(item.signal or '-'):<12} "
+                    f"{str(confirm):<12} {source:<6} {ajaib:<10} {target:<10} {entry}"
+                )
+            print(f"Saved {analyze_run.output_path}")
+            print(
+                f"BUY_SCAN screened={analyze_run.candidates_screened} "
+                f"analyzed_top={analyze_run.analyze_top} "
+                f"primary_bullish={len(analyze_run.primary_bullish)} "
+                f"confirmed={len(analyze_run.confirmed_bullish)} "
+                f"disputed={len(analyze_run.disputed_bullish)}"
+            )
+            if analyze_run.primary_bullish:
+                print("PRIMARY_BULLISH " + ", ".join(analyze_run.primary_bullish))
+            if analyze_run.confirmed_bullish:
+                print("CONFIRMED_BULLISH " + ", ".join(analyze_run.confirmed_bullish))
+            if analyze_run.disputed_bullish:
+                print("DISPUTED_BULLISH " + ", ".join(analyze_run.disputed_bullish))
+            if analyze_run.buy_candidates_path:
+                print(f"Buy detail: {analyze_run.buy_candidates_path}")
+            print(analyze_run.limitation)
+            return 0
         if args.command == "ajaib-import":
             snapshot = import_user_catalog(engine, args.input, datetime.now(UTC))
             print(

@@ -77,6 +77,97 @@ adapter at TradingAgents' raw graph until its Yahoo Finance fallback timeout is
 fixed; the raw graph may make provider requests outside the curated-facts
 boundary.
 
+## Ajaib US-stock fetch (optional automation)
+
+The screener endpoint used by the Ajaib web app is:
+
+`https://ajaib.co.id/api/us-stock?page_size=10000&filter_type=&sort_type=PCT_CHANGE_1_DAY&sort_direction=DESC`
+
+There is **no public documented API** for this US-stock list. Ajaib's published
+developer API is for **crypto exchange** only. The web endpoint is protected by
+Cloudflare; in practice a **browser cookie jar** (often without login) is enough.
+The important piece is usually `__cf_bm`, which expires quickly (~30 minutes).
+
+To automate fetches, copy session headers once from Chrome DevTools:
+
+1. Log in at [ajaib.co.id](https://ajaib.co.id) and open the US-stock screener.
+2. Open DevTools → Network, reload, filter `us-stock`.
+3. Open the request → copy **Request Headers**:
+   - `Cookie` (include `cf_clearance` if present)
+   - `Authorization` if present (some builds send `Bearer ...`)
+4. Put them in local `.env` (never commit):
+
+```text
+AJAIB_COOKIE="paste-cookie-header-here"
+# optional:
+AJAIB_AUTHORIZATION="Bearer ..."
+```
+
+Then fetch to the usual JSON path:
+
+```sh
+uv run python -m nomy_trader ajaib-fetch
+```
+
+Or combine fetch + full pipeline:
+
+```sh
+uv run python -m nomy_trader run --fetch-catalog
+```
+
+Cookies expire; refresh `AJAIB_COOKIE` when fetch returns a Cloudflare error.
+
+## Daily one-command run
+
+After updating Ajaib data (fetch or manual paste into
+`config/private_ajaib_us_stock.json`), run:
+
+```sh
+cd /Users/junaediwidjojo/HobbyProjects/nomy-trader
+uv run python -m nomy_trader run --fetch-catalog
+```
+
+That single command:
+
+1. Imports the Ajaib snapshot (with `--fetch-catalog`)
+2. Screens decline candidates (price, market cap, 1d/1w loss filters)
+3. Runs TradingAgents on the **top 12** ranked survivors (change with `--top N`)
+4. Auto-runs high-model confirmation when primary signal is Buy/Overweight
+5. Prints signals, buy summary, and price hints
+6. Writes `var/screen_analyze_results.json`
+7. Writes `var/buy_candidates_latest.json` (learning file for bullish names)
+8. Writes `var/latest_run_stamp.txt` (run metadata for the next session)
+
+Wider learning scan while Fireworks credits are available:
+
+```sh
+uv run python -m nomy_trader run --fetch-catalog --top 20
+```
+
+Use **`CONFIRMED_BULLISH`** as the actionable shortlist; treat **`DISPUTED_BULLISH`**
+(primary Buy/Overweight but confirmation disagrees) as reject for now.
+
+Production TradingAgents profile (locked in code as `baseline`):
+
+- Primary: `TRADINGAGENTS_MAX_DEBATE_ROUNDS=1`, `gpt-oss-120b`
+- If primary signal is **Buy** or **Overweight**, a confirmation pass runs with
+  `high_model_two_round_debate` (Qwen3.8 Max, 2 debate rounds, 900s timeout)
+
+TradingAgents results are cached locally for 48 hours per symbol and profile
+under `var/tradingagents_analysis_cache/`. A repeat `run` skips live AI calls
+for symbols analyzed within that window.
+
+Optional flags:
+
+```sh
+uv run python -m nomy_trader run --top 6
+uv run python -m nomy_trader run --skip-catalog-import   # reuse last SQLite import
+uv run python -m nomy_trader run --force-reanalyze       # ignore cache
+uv run python -m nomy_trader compare-profiles --symbol NVO  # sandbox experiments only
+```
+
+Override cache TTL with `TRADINGAGENTS_CACHE_TTL_HOURS` (default: `48`).
+
 ## Running TradingAgents from nomy-trader
 
 TradingAgents stays in its own checkout and virtual environment. Never run its
