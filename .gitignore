@@ -6,12 +6,12 @@ __pycache__/
 *.egg-info/
 dist/
 .env
-.DS_Store
-
 .env.*
+!.env.example
 *.sqlite*
 *.db
 *.db-*
 *.log
 config/private*
 exports/
+var/

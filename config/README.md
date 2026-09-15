@@ -123,7 +123,7 @@ After updating Ajaib data (fetch or manual paste into
 `config/private_ajaib_us_stock.json`), run:
 
 ```sh
-cd /Users/junaediwidjojo/HobbyProjects/nomy-trader
+cd /path/to/nomy-trader
 uv run python -m nomy_trader run --fetch-catalog
 ```
 
@@ -181,21 +181,19 @@ wait indefinitely.
 Run a small ranked batch, beginning with one to four symbols:
 
 ```sh
-export PATH="/private/tmp/nomy-tooling/bin:$PATH"
-
-cd /Users/junaediwidjojo/HobbyProjects/nomy-trader
+cd /path/to/nomy-trader
 set -a && source .env && set +a
 export YFINANCE_REQUEST_TIMEOUT_SECONDS=20
 
-cd /Users/junaediwidjojo/HobbyProjects/TradingAgents
+cd /path/to/TradingAgents
 uv run python ../nomy-trader/scripts/run_tradingagents_batch.py BRZE AHCO XE CHWY
 ```
 
-On this host, if `uv` is unavailable, use TradingAgents' own interpreter while
-keeping the rest of the command unchanged:
+If `uv` is unavailable, use TradingAgents' own interpreter while keeping the
+rest of the command unchanged:
 
 ```sh
-/Users/junaediwidjojo/HobbyProjects/TradingAgents/.venv/bin/python \
+/path/to/TradingAgents/.venv/bin/python \
   ../nomy-trader/scripts/run_tradingagents_batch.py BRZE
 ```
 

@@ -90,7 +90,8 @@ uv run pytest
 
 Older FMP discovery, Twelve Data recheck, Massive EOD, and the manual large-cap
 seed list still exist in the repo; they are **not** the daily experiment path.
-Telegram and broker automation remain out of scope (ADR 005).
+Telegram and broker automation remain out of scope (ADR 005). Released under
+the [MIT License](LICENSE).
 
 Plans: [007 screen-analyze](docs/plans/007-ajaib-screen-analyze-mvp.md),
 [006 TradingAgents](docs/plans/006-tradingagents-integration.md). Product and
