@@ -1,7 +1,7 @@
 from decimal import Decimal
 from unittest.mock import patch
 
-from nomy_trader.analysis.bullish import is_bullish_signal
+from nomy_trader.analysis.bullish import is_bullish_signal, qualifies_on_upside
 from nomy_trader.analysis.pipeline import (
     ScreenedSymbol,
     analyze_symbol,
@@ -43,6 +43,14 @@ def test_is_bullish_signal() -> None:
     assert is_bullish_signal("Overweight")
     assert not is_bullish_signal("Hold")
     assert not is_bullish_signal(None)
+
+
+def test_qualifies_on_upside_uses_target_against_live_price() -> None:
+    assert qualifies_on_upside("Hold", "28.0", Decimal("23.94"))
+    assert not qualifies_on_upside("Hold", "25.0", Decimal("24.50"))
+    assert not qualifies_on_upside("Underweight", "40.0", Decimal("20.00"))
+    assert not qualifies_on_upside("Hold", None, Decimal("20.00"))
+    assert not qualifies_on_upside("Hold", "28.0", None)
 
 
 def test_format_price() -> None:

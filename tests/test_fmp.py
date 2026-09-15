@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 import httpx
 import pytest
 
@@ -71,6 +73,29 @@ def test_quote_and_history_are_typed():
         200, [{"symbol": "ABC", "date": "2026-05-08", "price": 10, "volume": 5000}]
     ).daily_history("ABC")
     assert history[0].volume == 5000
+
+
+def test_profile_ignores_extra_vendor_fields():
+    profile = client(
+        200,
+        [
+            {
+                "symbol": "ABC",
+                "price": 90,
+                "marketCap": 400000000,
+                "volume": 1000000,
+                "averageVolume": 800000,
+                "changePercentage": -3.2,
+                "isEtf": False,
+                "isFund": False,
+                "isActivelyTrading": True,
+                "ceo": "unused",
+                "description": "unused",
+            }
+        ],
+    ).profile("ABC")
+    assert profile.symbol == "ABC"
+    assert profile.changePercentage == Decimal("-3.2")
 
 
 @pytest.mark.parametrize(

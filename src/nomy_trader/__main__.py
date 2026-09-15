@@ -15,13 +15,14 @@ from nomy_trader.analysis.compare import compare_profiles, print_compare_table
 from nomy_trader.analysis.pipeline import format_price, run_analyze_pipeline
 from nomy_trader.counterfactual import ScenarioInput, run_scenario
 from nomy_trader.market.ajaib_catalog import import_user_catalog
+from nomy_trader.market.ajaib_hints import run_reversal_hint_scan
+from nomy_trader.market.daily_recheck import recheck_daily
 from nomy_trader.providers.ajaib_us_stock import (
     AjaibUsStockAuthError,
     AjaibUsStockError,
     fetch_us_stock_catalog_to_file,
 )
-from nomy_trader.market.ajaib_hints import run_reversal_hint_scan
-from nomy_trader.market.daily_recheck import recheck_daily
+from nomy_trader.providers.fmp import FmpError
 from nomy_trader.providers.massive import MassiveClient, MassiveError
 from nomy_trader.providers.sec_edgar import SecEdgarClient, SecEdgarError
 from nomy_trader.providers.twelve_data import TwelveDataClient, TwelveDataError
@@ -110,6 +111,11 @@ def main() -> int:
         "--fetch-catalog",
         action="store_true",
         help="Fetch Ajaib US-stock JSON via session cookie before import/run",
+    )
+    parser.add_argument(
+        "--skip-confirm",
+        action="store_true",
+        help="Stay on the baseline model; run no high-model confirmation pass",
     )
     args = parser.parse_args()
     load_dotenv(Path.cwd() / ".env", override=False)
@@ -251,8 +257,9 @@ def main() -> int:
                     timeout_seconds=args.timeout,
                     on_progress=_progress,
                     force_refresh=args.force_reanalyze,
+                    confirm_bullish=not args.skip_confirm,
                 )
-            except (OSError, ValueError, FileNotFoundError) as exc:
+            except (OSError, ValueError, FileNotFoundError, FmpError) as exc:
                 print(f"Run stopped: {exc}")
                 return 1
             if analyze_run.catalog_imported:
@@ -265,6 +272,28 @@ def main() -> int:
                 flush=True,
             )
             print(
+                f"FMP_PRESCREEN checked={analyze_run.fmp_checked} "
+                f"passed={len(analyze_run.fmp_passed)} "
+                f"rejected={len(analyze_run.fmp_rejected)} "
+                f"reused={sum(1 for r in analyze_run.fmp_rows if r.source == 'cache')}",
+                flush=True,
+            )
+            for row in analyze_run.fmp_rows:
+                if row.passed:
+                    metrics = row.metrics
+                    extra = ""
+                    if metrics is not None:
+                        extra = (
+                            f" close=${metrics.close} "
+                            f"1d {metrics.one_day_percent}%"
+                        )
+                    print(f"FMP_PASS {row.symbol}{extra}", flush=True)
+                else:
+                    print(
+                        f"FMP_REJECT {row.symbol} {','.join(row.reasons)}",
+                        flush=True,
+                    )
+            print(
                 f"ANALYZE_COMPLETE {analyze_run.symbols_analyzed} symbols | "
                 f"{analyze_run.catalogue_revision} | "
                 f"cache_hits={analyze_run.cache_hits} "
@@ -274,7 +303,7 @@ def main() -> int:
             )
             print(
                 f"{'Rank':<5} {'Symbol':<8} {'Signal':<12} {'Confirm':<12} "
-                f"{'Src':<6} {'Ajaib':<10} {'Target':<10} {'Entry hint'}"
+                f"{'Src':<6} {'Ajaib':<10} {'Target':<10} {'Up%':<8} {'Entry hint'}"
             )
             for item in analyze_run.results:
                 screened = item.screened
@@ -290,20 +319,29 @@ def main() -> int:
                 entry = item.entry_hint or item.executive_summary or item.error or "-"
                 if len(entry) > 56:
                     entry = entry[:53] + "..."
+                upside = (
+                    f"{item.target_upside * 100:+.1f}%"
+                    if item.target_upside is not None
+                    else "-"
+                )
                 print(
                     f"{rank:<5} {item.symbol:<8} {(item.signal or '-'):<12} "
-                    f"{str(confirm):<12} {source:<6} {ajaib:<10} {target:<10} {entry}"
+                    f"{str(confirm):<12} {source:<6} {ajaib:<10} {target:<10} "
+                    f"{upside:<8} {entry}"
                 )
             print(f"Saved {analyze_run.output_path}")
             print(
                 f"BUY_SCAN screened={analyze_run.candidates_screened} "
                 f"analyzed_top={analyze_run.analyze_top} "
                 f"primary_bullish={len(analyze_run.primary_bullish)} "
+                f"upside={len(analyze_run.upside_candidates)} "
                 f"confirmed={len(analyze_run.confirmed_bullish)} "
                 f"disputed={len(analyze_run.disputed_bullish)}"
             )
             if analyze_run.primary_bullish:
                 print("PRIMARY_BULLISH " + ", ".join(analyze_run.primary_bullish))
+            if analyze_run.upside_candidates:
+                print("UPSIDE_CANDIDATES " + ", ".join(analyze_run.upside_candidates))
             if analyze_run.confirmed_bullish:
                 print("CONFIRMED_BULLISH " + ", ".join(analyze_run.confirmed_bullish))
             if analyze_run.disputed_bullish:
@@ -332,9 +370,10 @@ def main() -> int:
             print(
                 "PRIORITY_POLICY "
                 f"{policy.version} | one-day x{policy.one_day_weight} | "
+                f"one-week x{policy.one_week_weight} | "
                 f"one-month x{policy.one_month_weight} above "
                 f"{policy.one_month_floor}%, capped at "
-                f"{policy.one_month_context_cap_fraction}x daily severity"
+                f"{policy.one_month_context_cap_fraction}x weekly+daily severity"
             )
             for ranked in scan.ranked_candidates[: args.top]:
                 candidate = ranked.hint
@@ -347,6 +386,7 @@ def main() -> int:
                     f"#{ranked.rank} {candidate.symbol} | "
                     f"score {ranked.breakdown.total} "
                     f"(day {ranked.breakdown.one_day_severity}, "
+                    f"week {ranked.breakdown.one_week_severity}, "
                     f"month {ranked.breakdown.one_month_reversal_context}) | "
                     f"${candidate.price} | "
                     f"1d {candidate.one_day_percent}% | "

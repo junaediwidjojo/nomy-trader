@@ -13,7 +13,11 @@ from pathlib import Path
 from pydantic import Field
 from sqlalchemy import Engine
 
-from nomy_trader.analysis.bullish import is_bullish_signal
+from nomy_trader.analysis.bullish import (
+    is_bullish_signal,
+    qualifies_on_upside,
+    upside_fraction,
+)
 from nomy_trader.analysis.buy_scan import (
     summarize_buy_candidates,
     write_buy_scan_summary,
@@ -35,6 +39,12 @@ from nomy_trader.analysis.profiles import (
 from nomy_trader.domain.models import Contract, Finite, Positive, Text, Timestamp
 from nomy_trader.market.ajaib_catalog import import_user_catalog
 from nomy_trader.market.ajaib_hints import AjaibReversalHintScan, run_reversal_hint_scan
+from nomy_trader.market.fmp_prescreen import (
+    FmpPrescreenRow,
+    daily_fmp_prescreen_window,
+    prescreen_ranked_hints,
+)
+from nomy_trader.providers.fmp import FmpClient
 
 
 class ScreenedSymbol(Contract):
@@ -59,6 +69,8 @@ class SymbolAnalysis(Contract):
     error: Text | None = None
     source: Text | None = None
     analyzed_at: Timestamp | None = None
+    reference_price: Positive | None = None
+    target_upside: Finite | None = None
     confirmatory: SymbolAnalysis | None = None
     confirmatory_profile: Text | None = None
 
@@ -76,12 +88,20 @@ class AnalyzeRun(Contract):
     cache_ttl_hours: int = Field(gt=0)
     buy_confirmations_run: int = Field(ge=0)
     primary_bullish: tuple[Text, ...] = ()
+    upside_candidates: tuple[Text, ...] = ()
     confirmed_bullish: tuple[Text, ...] = ()
     disputed_bullish: tuple[Text, ...] = ()
+    fmp_checked: int = Field(ge=0, default=0)
+    fmp_passed: tuple[Text, ...] = ()
+    fmp_rejected: tuple[Text, ...] = ()
+    fmp_rows: tuple[FmpPrescreenRow, ...] = ()
     buy_candidates_path: Text | None = None
     results: tuple[SymbolAnalysis, ...]
     output_path: Text
     limitation: Text
+
+
+PRESCREEN_POOL_MULTIPLIER = 2
 
 
 def default_tradingagents_python(project_root: Path | None = None) -> Path:
@@ -210,6 +230,7 @@ def analyze_symbols(
     now: datetime | None = None,
     force_refresh: bool = False,
     confirm_bullish: bool = True,
+    reference_prices: dict[str, Decimal] | None = None,
 ) -> tuple[SymbolAnalysis, ...]:
     screened_by_symbol: dict[str, ScreenedSymbol] = {}
     if scan is not None:
@@ -260,7 +281,19 @@ def analyze_symbols(
                 source="live",
                 analyzed_at=clock,
             )
-        if confirm_bullish and is_bullish_signal(analysis.signal):
+        reference = (reference_prices or {}).get(symbol.upper())
+        if reference is None and screened is not None:
+            reference = screened.ajaib_price
+        analysis = analysis.model_copy(
+            update={
+                "reference_price": reference,
+                "target_upside": upside_fraction(analysis.price_target, reference),
+            }
+        )
+        wants_confirm = is_bullish_signal(analysis.signal) or qualifies_on_upside(
+            analysis.signal, analysis.price_target, reference
+        )
+        if confirm_bullish and wants_confirm:
             if on_progress is not None:
                 on_progress(index, total, symbol.upper(), "confirm")
             try:
@@ -314,6 +347,8 @@ def run_analyze_pipeline(
     timeout_seconds: int | None = None,
     on_progress: Callable[[int, int, str, str], None] | None = None,
     force_refresh: bool = False,
+    fmp_client: FmpClient | None = None,
+    confirm_bullish: bool = True,
 ) -> AnalyzeRun:
     if now.tzinfo is None or now.utcoffset() is None:
         raise ValueError("analyze clock must be timezone-aware")
@@ -326,18 +361,49 @@ def run_analyze_pipeline(
         catalog_imported = True
         catalog_entry_count = snapshot.catalog_entry_count
     scan = run_reversal_hint_scan(engine, now)
+    if top < 1:
+        raise ValueError("--top must be positive")
+    ranked_by_symbol = {item.hint.symbol: item for item in scan.ranked_candidates}
     if symbols:
-        selected = tuple(symbol.upper() for symbol in symbols)
-    else:
-        if top < 1:
-            raise ValueError("--top must be positive")
-        selected = tuple(
-            ranked.hint.symbol for ranked in scan.ranked_candidates[:top]
+        wanted = tuple(symbol.upper() for symbol in symbols)
+        pool = tuple(
+            ranked_by_symbol[symbol] for symbol in wanted if symbol in ranked_by_symbol
         )
-    if not selected:
+    else:
+        # One FMP call per pooled hint, against a 250/day budget.
+        pool = scan.ranked_candidates[: top * PRESCREEN_POOL_MULTIPLIER]
+    if not pool:
         raise ValueError(
             "no screened candidates; import a fresh Ajaib snapshot or relax filters"
         )
+    client = fmp_client or FmpClient.from_environment()
+    owns_client = fmp_client is None
+    try:
+        prescreen = prescreen_ranked_hints(
+            engine,
+            client,
+            pool,
+            now=now,
+            quota_window=daily_fmp_prescreen_window(now),
+        )
+    finally:
+        if owns_client:
+            client.close()
+    fmp_passed = tuple(item.hint.symbol for item in prescreen.passed)
+    fmp_rejected = tuple(row.symbol for row in prescreen.rows if not row.passed)
+    if symbols:
+        selected = fmp_passed
+    else:
+        selected = fmp_passed[:top]
+    if not selected:
+        raise ValueError(
+            "no FMP-confirmed candidates; all Ajaib hints failed the profile screen"
+        )
+    reference_prices = {
+        row.symbol: row.metrics.close
+        for row in prescreen.rows
+        if row.metrics is not None
+    }
     results = analyze_symbols(
         selected,
         scan,
@@ -346,12 +412,12 @@ def run_analyze_pipeline(
         on_progress=on_progress,
         now=now,
         force_refresh=force_refresh,
+        reference_prices=reference_prices,
+        confirm_bullish=confirm_bullish,
     )
     cache_hits = sum(1 for item in results if item.source == "cache")
     cache_misses = sum(1 for item in results if item.source == "live")
-    buy_confirmations = sum(
-        1 for item in results if item.confirmatory is not None
-    )
+    buy_confirmations = sum(1 for item in results if item.confirmatory is not None)
     ttl_hours = int(cache_ttl().total_seconds() // 3600)
     buy_summary = summarize_buy_candidates(
         results,
@@ -376,16 +442,25 @@ def run_analyze_pipeline(
         cache_ttl_hours=ttl_hours,
         buy_confirmations_run=buy_confirmations,
         primary_bullish=buy_summary.primary_bullish,
+        upside_candidates=buy_summary.upside_candidates,
         confirmed_bullish=buy_summary.confirmed_bullish,
         disputed_bullish=buy_summary.disputed_bullish,
+        fmp_checked=len(prescreen.rows),
+        fmp_passed=fmp_passed,
+        fmp_rejected=fmp_rejected,
+        fmp_rows=prescreen.rows,
         buy_candidates_path=str(buy_path),
         results=results,
         output_path=str(out),
         limitation=(
             "Supplementary TradingAgents sandbox output only; not execution, "
-            "position sizing, or a profitability claim. Primary screening uses "
-            "one debate round on gpt-oss-120b; Buy/Overweight triggers a "
-            "high_model_two_round_debate confirmation pass."
+            "position sizing, or a profitability claim. Ajaib is a funnel; "
+            "FMP company profile must confirm liquidity, price agreement with "
+            "Ajaib, and that the name has not already rebounded, before "
+            "TradingAgents. Primary screening uses one debate round on "
+            "gpt-oss-120b; Buy/Overweight, or a non-bearish rating whose price "
+            "target clears the minimum upside over the live price, triggers a "
+            "high_model_two_round_debate confirmation pass unless skipped."
         ),
     )
     out.write_text(json.dumps(run.model_dump(mode="json"), indent=2), encoding="utf-8")
@@ -396,6 +471,7 @@ def run_analyze_pipeline(
                 f"observed_at={now.isoformat()}",
                 f"catalogue_revision={scan.catalogue_revision}",
                 f"candidates_screened={len(scan.candidates)}",
+                f"fmp_passed={len(fmp_passed)}",
                 f"symbols_analyzed={len(results)}",
                 f"profile={DEFAULT_RUN_PROFILE}",
                 f"model={default_run_env_overrides()['TRADINGAGENTS_DEEP_THINK_LLM']}",

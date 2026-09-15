@@ -56,18 +56,18 @@ def test_reversal_hints_require_all_approved_boundaries_and_log_rejections(tmp_p
     source = tmp_path / "ajaib.json"
     source.write_text(
         '{"err_message":"APPROVED/OK","result":{"count":3,"results":['
-        '{"code":"HINT","name":"Hint","price":6,"market_cap":100000001,'
-        '"price_1_day":{"pct_change":-1},'
-        '"price_1_week":{"pct_change":-3},'
+        '{"code":"HINT","name":"Hint","price":11,"market_cap":250000001,'
+        '"price_1_day":{"pct_change":-1.5},'
+        '"price_1_week":{"pct_change":-4},'
         '"price_1_month":{"pct_change":-100}},'
-        '{"code":"DAY","name":"Day","price":6,"market_cap":100000001,'
-        '"price_1_day":{"pct_change":-0.99},'
-        '"price_1_week":{"pct_change":-3},'
-        '"price_1_month":{"pct_change":1}},'
-        '{"code":"WEEK","name":"Week","price":6,"market_cap":100000001,'
+        '{"code":"SMALL","name":"Small","price":11,"market_cap":250000000,'
+        '"price_1_day":{"pct_change":-1.49},'
+        '"price_1_week":{"pct_change":-4},'
+        '"price_1_month":{"pct_change":-10}},'
+        '{"code":"FLAT","name":"Flat","price":11,"market_cap":250000001,'
         '"price_1_day":{"pct_change":-6},'
-        '"price_1_week":{"pct_change":-2.99},'
-        '"price_1_month":{"pct_change":-4}}]}}'
+        '"price_1_week":{"pct_change":-3.99},'
+        '"price_1_month":{"pct_change":-9.99}}]}}'
     )
     engine = open_database(tmp_path / "catalog.sqlite")
     upgrade(engine)
@@ -77,10 +77,30 @@ def test_reversal_hints_require_all_approved_boundaries_and_log_rejections(tmp_p
     scan = run_reversal_hint_scan(engine, now)
 
     assert [hint.symbol for hint in scan.candidates] == ["HINT"]
-    assert scan.rejections[0].symbol == "DAY"
-    assert "one_day_decline_not_at_least_1_percent" in scan.rejections[0].reasons
-    assert scan.rejections[1].symbol == "WEEK"
-    assert "one_week_decline_not_at_least_3_percent" in scan.rejections[1].reasons
+    assert scan.rejections[0].symbol == "SMALL"
+    assert "market_cap_not_above_250m" in scan.rejections[0].reasons
+    assert scan.rejections[1].symbol == "FLAT"
+    assert "no_week_or_month_drawdown" in scan.rejections[1].reasons
+
+
+def test_month_drawdown_alone_qualifies_a_stabilized_selloff(tmp_path):
+    source = tmp_path / "ajaib.json"
+    source.write_text(
+        '{"err_message":"APPROVED/OK","result":{"count":1,"results":['
+        '{"code":"CALM","name":"Calm","price":11,"market_cap":250000001,'
+        '"price_1_day":{"pct_change":0.4},'
+        '"price_1_week":{"pct_change":-1},'
+        '"price_1_month":{"pct_change":-18}}]}}'
+    )
+    engine = open_database(tmp_path / "catalog.sqlite")
+    upgrade(engine)
+    now = datetime(2026, 9, 9, tzinfo=UTC)
+    import_user_catalog(engine, source, now)
+
+    scan = run_reversal_hint_scan(engine, now)
+
+    assert [hint.symbol for hint in scan.candidates] == ["CALM"]
+    engine.dispose()
     engine.dispose()
 
 
@@ -90,9 +110,9 @@ def test_priority_rank_is_explainable_and_ties_break_by_symbol():
             symbol=symbol,
             issuer_name=f"{symbol} Inc.",
             price=Decimal("10"),
-            market_cap=100_000_001,
+            market_cap=250_000_001,
             one_day_percent=Decimal(day),
-            one_week_percent=Decimal("-3"),
+            one_week_percent=Decimal("-4"),
             one_month_percent=Decimal(month) if month is not None else None,
         )
 
@@ -112,22 +132,45 @@ def test_priority_rank_is_explainable_and_ties_break_by_symbol():
         "ALPHA",
         "BETA",
     ]
-    assert ranked[0].breakdown.one_day_severity == Decimal("8.0")
-    assert ranked[0].breakdown.one_month_reversal_context == Decimal("2.000")
+    assert ranked[0].breakdown.one_day_severity == Decimal("2.0")
+    assert ranked[0].breakdown.one_week_severity == Decimal("4.0")
+    assert ranked[0].breakdown.one_month_reversal_context == Decimal("1.5")
     assert ranked[1].breakdown.one_month_reversal_context == Decimal("0.00")
-    assert ranked[2].breakdown.total == Decimal("5.0")
+    assert ranked[2].breakdown.total == Decimal("5.25")
+
+
+def test_stabilized_weekly_drawdown_outranks_same_day_crash():
+    def hint(symbol: str, day: str, week: str) -> AjaibReversalHint:
+        return AjaibReversalHint(
+            symbol=symbol,
+            issuer_name=f"{symbol} Inc.",
+            price=Decimal("10"),
+            market_cap=250_000_001,
+            one_day_percent=Decimal(day),
+            one_week_percent=Decimal(week),
+            one_month_percent=Decimal("-12"),
+        )
+
+    ranked = rank_reversal_hints(
+        (
+            hint("CRASH", "-6", "-7"),
+            hint("AMGNLIKE", "0.4", "-13"),
+        ),
+        DEFAULT_PRIORITY_POLICY,
+    )
+    assert [item.hint.symbol for item in ranked] == ["AMGNLIKE", "CRASH"]
 
 
 def test_ranked_scan_keeps_base_candidates_and_persists_policy(tmp_path):
     source = tmp_path / "ajaib.json"
     source.write_text(
         '{"err_message":"APPROVED/OK","result":{"count":2,"results":['
-        '{"code":"LOW","name":"Low","price":6,"market_cap":100000001,'
-        '"price_1_day":{"pct_change":-9},"price_1_week":{"pct_change":-3},'
+        '{"code":"LOW","name":"Low","price":11,"market_cap":250000001,'
+        '"price_1_day":{"pct_change":-8},"price_1_week":{"pct_change":-4},'
         '"price_1_month":{"pct_change":-20}},'
-        '{"code":"RECENT","name":"Recent","price":6,"market_cap":100000001,'
-        '"price_1_day":{"pct_change":-8},"price_1_week":{"pct_change":-3},'
-        '"price_1_month":{"pct_change":10}}]}}'
+        '{"code":"RECENT","name":"Recent","price":11,"market_cap":250000001,'
+        '"price_1_day":{"pct_change":-8},"price_1_week":{"pct_change":-4},'
+        '"price_1_month":{"pct_change":-8}}]}}'
     )
     engine = open_database(tmp_path / "catalog.sqlite")
     now = datetime(2026, 9, 9, tzinfo=UTC)

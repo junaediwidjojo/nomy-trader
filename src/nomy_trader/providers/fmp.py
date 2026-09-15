@@ -64,6 +64,22 @@ class DailyBar(FmpModel):
     volume: Decimal = Field(ge=0, allow_inf_nan=False)
 
 
+class CompanyProfile(BaseModel):
+    """Stable /profile payload; extra vendor fields are ignored."""
+
+    model_config = ConfigDict(extra="ignore", frozen=True)
+
+    symbol: str = Field(min_length=1)
+    price: Decimal = Field(gt=0, allow_inf_nan=False)
+    marketCap: Decimal | None = Field(default=None, allow_inf_nan=False)
+    volume: Decimal | None = Field(default=None, allow_inf_nan=False)
+    averageVolume: Decimal | None = Field(default=None, allow_inf_nan=False)
+    changePercentage: Decimal | None = Field(default=None, allow_inf_nan=False)
+    isEtf: bool | None = None
+    isFund: bool | None = None
+    isActivelyTrading: bool | None = None
+
+
 class FmpClient:
     """Small FMP stable-API client with injectable transport for tests."""
 
@@ -99,6 +115,15 @@ class FmpClient:
 
     def quote(self, symbol: str) -> Quote:
         return self._models("/quote", Quote, {"symbol": symbol})[0]
+
+    def profile(self, symbol: str) -> CompanyProfile:
+        payload = self._request("/profile", {"symbol": symbol})
+        if not isinstance(payload, list) or not payload:
+            raise FmpPayloadError("FMP returned an empty or non-list payload")
+        try:
+            return CompanyProfile.model_validate(payload[0])
+        except ValidationError as exc:
+            raise FmpPayloadError("FMP response fields are unsupported") from exc
 
     def daily_history(self, symbol: str) -> tuple[DailyBar, ...]:
         return self._models("/historical-price-eod/light", DailyBar, {"symbol": symbol})

@@ -1,100 +1,114 @@
 # nomy-trader
 
-Educational, AI-assisted buy-side recommendations: FMP candidate discovery,
-deterministic eligibility and advisory sizing, complete trade plans logged to
-SQLite, and Telegram notifications. The user executes independently elsewhere.
-No broker integration, position tracking, reconciliation or automated exits.
-Stop and target fields are advisory; profitability is not assumed.
+Educational research tool for **possible overreactions after stock declines**.
+It screens Ajaib US-stock snapshots, applies cheap deterministic gates, then
+optionally asks TradingAgents for a supplementary signal. You execute
+elsewhere. There is **no broker integration**, order submission, position
+tracking, or claim of profitability. Stops and targets are commentary only.
 
-## Current status
+## Current experiment (Sep 2026)
 
-The [ExecPlan](docs/plans/001-mvp-scope-revision.md) is approved. Milestone 1
-provides immutable recommendation contracts, complete-plan/policy validation,
-and offline scenarios. Broker models and reconciliation are removed from active
-code; the original implementation remains in Git history. SQLite journal/outbox/quota
-persistence and FMP loser discovery are implemented; AI and Telegram integrations
-are still pending. The verified FMP free account can list 50 losers but returned
-HTTP 402 when rechecking a live loser quote, so it cannot yet produce a reliable
-dynamic-candidate recheck. Resume at S12 only after resolving that provider gate.
+The working loop is no longer “FMP biggest losers → Telegram recommendation.”
+It is a **cost-aware screen-and-review pipeline**:
 
-Twelve Data Basic is now the approved price/volume recheck provider. Its free
-plan supplies eight API credits per minute and a daily allocation, with a
-limited-venue U.S. real-time reference feed. This is useful for confirming a
-shortlist, but is never an executable/consolidated quote or proof of eligibility.
-The current Massive end-of-day adapter remains deferred: its first real response
-was stale, with bars through 2026-09-04 while the required completed XNYS session
-was 2026-09-08. No plan or recommendation was created.
+1. Fetch or import an Ajaib US-stock JSON snapshot.
+2. Rank **week-weighted drawdowns** (AMGN-like: large weekly drop that has
+   already stopped crashing today).
+3. **FMP `/profile` prescreen** (this account’s quote/history endpoints return
+   HTTP 402). Reject ETFs/funds, thin dollar volume, Ajaib–FMP price mismatch,
+   and names already rebounded more than +3% today. Observations reuse for 8h
+   so repeat runs do not burn the 250/day FMP budget.
+4. Run TradingAgents on the top N with **gpt-oss-120b, 1 debate round**
+   (baseline). Cache hits skip the model for 48h per symbol+profile.
+5. **High-model re-verify** (`qwen3p8-max`, 2 rounds) only when you want it:
+   Buy/Overweight, or a Hold whose parsed target is ≥5% above the live FMP
+   price. Use `--skip-confirm` to stay on the cheap model.
 
-The approved large-cap discovery policy requires price strictly greater than $5 and market
-capitalization at least $2 billion. FMP's screener endpoint returned HTTP 402 for
-this account, so this filter is currently a provider gate; the system must not
-mislabel price-only candidates as large-cap stocks.
+### What we observed
 
-The active replacement is a transparent, manually maintained seed list at
-[`config/large_cap_universe.json`](config/large_cap_universe.json). FMP loser
-results are narrowed to this list and the >$5 price floor, while retaining raw
-source candidates in SQLite. Review the list before each policy release; it does
-not automatically prove current market cap, liquidity, or eligibility.
+| Pass | Result |
+|------|--------|
+| Tight 1d/1w crash filters | 0 Buys; mostly Hold/Underweight; Fireworks spend on names still falling |
+| Wider funnel + FMP live 1d ≤ −1% | Rejected names that had already bounced (the AMGN pattern) |
+| Week-weighted rank + skip high model | Top 50 on 15 Sep: **ASM, AMGN, CRS, KGC Overweight**; plus Hold upside on NVS, SMR, SNDK, AGCO |
+| High-model confirm on those 4 Overweights | **All disputed** (Hold or unparsed REVIEW). None confirmed |
+| High-model BRZE / NVO | Both **Hold**, and often **no price levels** because the debate lacked quotes |
 
-Ajaib availability is a separate mandatory gate for the expanded $300M–$10B
-universe. Its public catalogue is paginated, but normal automated retrieval is
-Cloudflare-blocked; the application will accept only a dated, allowed official
-catalogue export or user confirmation and rejects candidates until one exists.
+Baseline is cheap and noisy. High model is expensive and conservative. Treat
+Overweight as a **research shortlist**, not a buy.
 
-## Run the offline foundation
+### Cheap filters worth keeping
 
-## Twelve Data registration for the approved recheck provider
+- Prefer **weekly drawdown**, not same-day crash ranking (ARQQ-style −18% 1d
+  names came back Underweight).
+- Keep names whose **live 1d is roughly −5% to +2%**, price **>$20**, and FMP
+  dollar volume **≥ $5M**.
+- Do **not** require a fresh 1d decline on FMP; that deleted AMGN-like setups.
+- Spend Fireworks on **re-verify of Overweight / material-upside Holds**, not
+  on the full Ajaib list.
 
-1. Register at https://twelvedata.com/.
-2. Select Basic ($0/month), for personal/internal non-display use.
-3. Find your API key in the Twelve Data dashboard.
-4. Add `TWELVE_DATA_API_KEY=your_key_here` to the existing local `.env`, keeping
-   `FMP_API_KEY` as well. Never paste either key into chat or commit it.
-5. Resume S12t-b in the ExecPlan to verify actual candidate coverage before use.
+## Run
 
-The typed Twelve Data quote adapter and persistent 8-credit-per-minute,
-800-credit-per-day local reservation guard are implemented and covered by
-offline fixture tests. It has not yet made a live request. The free feed does
-not establish a consolidated bid/ask or executable price. Official pricing:
-https://twelvedata.com/pricing
+Needs Python 3.12+, a local `.venv` or `uv`, `FMP_API_KEY`, `AJAIB_COOKIE` for
+fetch, and Fireworks via TradingAgents’ sibling checkout (see
+[`config/README.md`](config/README.md)). Never commit `.env` or
+`config/private_*`.
 
-## Offline verification
+```sh
+# Fresh Ajaib list, screen, baseline TradingAgents on top 50, no high-model pass
+.venv/bin/python -u -m nomy_trader run --fetch-catalog --top 50 --skip-confirm
 
-Install Python 3.12+ and uv, then run:
+# Resume later: reuse TradingAgents cache (48h) and FMP rows (8h)
+.venv/bin/python -u -m nomy_trader run --top 50 --skip-confirm --skip-catalog-import
+
+# High-model re-verify of named Overweights (writes a separate JSON)
+.venv/bin/python -u -m nomy_trader analyze --symbols ASM AMGN CRS KGC \
+  --skip-catalog-import --output var/confirm_overweight_results.json
+```
+
+Do not pass `--force-reanalyze` unless you intend to spend Fireworks again.
+
+Artifacts (gitignored): `var/screen_analyze_results.json`,
+`var/buy_candidates_latest.json`, `var/tradingagents_analysis_cache/`.
+
+## Safety
+
+- TradingAgents output is untrusted supplementary text.
+- An LLM must not size positions, bypass policy, or talk to a broker.
+- Missing data blocks a buy **notification** in the original MVP design; this
+  sandbox does not send Telegram and does not execute.
+
+## Offline checks
 
 ```sh
 uv sync --locked
-uv run python -m nomy_trader.scenarios
 uv run ruff format --check .
 uv run ruff check .
 uv run mypy src
 uv run pytest
 ```
 
-Pydantic validates immutable external contracts. pytest checks behavior, Ruff
-formats/lints Python, mypy checks types, and Hatchling builds the package. Exact
-versions are in uv.lock. Scenarios require no services or credentials. All
-prices, risk budgets and thresholds in fixtures are explicitly hypothetical;
-no production risk configuration is supplied. Scenario health checks validate
-rejection behavior, not real quota persistence or Telegram recovery.
+Older FMP discovery, Twelve Data recheck, Massive EOD, and the manual large-cap
+seed list still exist in the repo; they are **not** the daily experiment path.
+Telegram and broker automation remain out of scope (ADR 005).
 
-Read AGENTS.md, PLANS.md, then docs/PRODUCT_SPEC.md, TRADING_POLICY.md,
-ARCHITECTURE.md, DATA_MODEL.md, EVALUATION.md and ROADMAP.md. Numeric policy TBDs
-remain unresolved. Original IBKR automation specifications are preserved under
-[historical design](docs/archive/ibkr-design/README.md) for possible future work.
+Plans: [007 screen-analyze](docs/plans/007-ajaib-screen-analyze-mvp.md),
+[006 TradingAgents](docs/plans/006-tradingagents-integration.md). Product and
+policy: `docs/PRODUCT_SPEC.md`, `docs/TRADING_POLICY.md`, `AGENTS.md`.
 
-SQLAlchemy Core supplies transactional SQLite access; Alembic supplies versioned
-schema upgrades. `httpx` provides the bounded FMP HTTP client and
-`python-dotenv` loads the ignored local `.env`; neither logs or persists the API
-key. These dependencies implement the approved persistence and FMP milestones.
+## AI-engineering learning (next)
 
-## Resume checkpoint
+The current LLM use is a **subprocess black box**: we set env vars, wait, parse
+`**Rating**` from markdown. That is a start, not an AI-engineer stack. Useful
+next practice, in order:
 
-S01–S08 are complete. S09 needs an FMP key provisioned locally as `FMP_API_KEY`
-before account entitlement can be verified. Do not put keys in chat or Git.
-The MVP is not yet operational: no FMP/model/Telegram adapters, delivery worker
-or scheduler exist. Advisory sizing is validated from supplied inputs; final
-quantity selection remains S19. Remaining policy decisions are in the ExecPlan.
-
-Verification on Python 3.14.6: locked sync, format, lint, mypy, 75 tests and
-12 offline scenarios pass. Other supported Python versions remain untested.
+1. **Structured outputs** — JSON schema for rating / entry / stop / target;
+   reject instead of regex-repairing `REVIEW`.
+2. **Grounding** — inject FMP profile + Ajaib prints into the prompt so high
+   model cannot claim “no quote in this debate.”
+3. **Eval set** — freeze a dated shortlist (AMGN, CRS, KGC, ARQQ, FMC) and
+   score baseline vs confirm for agreement, empty reports, and cost per call.
+4. **Tool use you own** — a small agent that may call FMP profile / history
+   only, with quota, timeouts, and logged traces (LangSmith or local JSONL).
+5. **Not yet** — RAG over filings (see [ADR 003](docs/decisions/003-no-rag-initially.md)),
+   Telegram, or any broker path.
