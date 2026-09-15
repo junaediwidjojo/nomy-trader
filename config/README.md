@@ -157,6 +157,12 @@ TradingAgents results are cached locally for 48 hours per symbol and profile
 under `var/tradingagents_analysis_cache/`. A repeat `run` skips live AI calls
 for symbols analyzed within that window.
 
+After the graph returns markdown, the runner makes **one extra** JSON
+completion. nomy-trader accepts only `{rating, entry, stop, target, horizon,
+why}` with all three prices present. `REVIEW` and prose-only decisions become
+`UNAVAILABLE` (fail closed). Cache entries created before this contract do not
+satisfy it; wait for TTL or use `--force-reanalyze`.
+
 Optional flags:
 
 ```sh

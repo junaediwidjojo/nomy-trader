@@ -29,12 +29,15 @@ from nomy_trader.analysis.cache import (
     profile_cache_key,
     save_cache_entry,
 )
-from nomy_trader.analysis.decision_parse import parse_final_decision
 from nomy_trader.analysis.profiles import (
     CONFIRM_BUY_PROFILE,
     DEFAULT_RUN_PROFILE,
     confirm_buy_env_overrides,
     default_run_env_overrides,
+)
+from nomy_trader.analysis.structured_decision import (
+    DecisionRejected,
+    accept_analyst_decision,
 )
 from nomy_trader.domain.models import Contract, Finite, Positive, Text, Timestamp
 from nomy_trader.market.ajaib_catalog import import_user_catalog
@@ -63,6 +66,8 @@ class SymbolAnalysis(Contract):
     rating: Text | None = None
     price_target: Text | None = None
     entry_hint: Text | None = None
+    stop: Text | None = None
+    why: Text | None = None
     time_horizon: Text | None = None
     executive_summary: Text | None = None
     report_path: Text | None = None
@@ -156,18 +161,33 @@ def analyze_symbol(
     raw: dict[str, object],
     screened: ScreenedSymbol | None,
 ) -> SymbolAnalysis:
-    final_decision = str(raw.get("final_decision") or "")
-    parsed = parse_final_decision(final_decision)
+    symbol = str(raw["ticker"])
+    report_path = str(raw["report_path"]) if raw.get("report_path") else None
+    try:
+        decision = accept_analyst_decision(raw)
+    except DecisionRejected as exc:
+        return SymbolAnalysis(
+            symbol=symbol,
+            screened=screened,
+            signal="UNAVAILABLE",
+            error=str(exc),
+            report_path=report_path,
+        )
+    target = format(decision.target, "f")
+    entry = format(decision.entry, "f")
+    stop = format(decision.stop, "f")
     return SymbolAnalysis(
-        symbol=str(raw["ticker"]),
+        symbol=symbol,
         screened=screened,
-        signal=str(raw.get("signal") or parsed["rating"] or "UNAVAILABLE"),
-        rating=parsed["rating"],
-        price_target=parsed["price_target"],
-        entry_hint=parsed["entry_hint"],
-        time_horizon=parsed["time_horizon"],
-        executive_summary=parsed["executive_summary"],
-        report_path=str(raw["report_path"]) if raw.get("report_path") else None,
+        signal=decision.rating.value,
+        rating=decision.rating.value,
+        price_target=target,
+        entry_hint=entry,
+        stop=stop,
+        why=decision.why,
+        time_horizon=decision.horizon,
+        executive_summary=decision.why,
+        report_path=report_path,
     )
 
 
@@ -460,7 +480,9 @@ def run_analyze_pipeline(
             "TradingAgents. Primary screening uses one debate round on "
             "gpt-oss-120b; Buy/Overweight, or a non-bearish rating whose price "
             "target clears the minimum upside over the live price, triggers a "
-            "high_model_two_round_debate confirmation pass unless skipped."
+            "high_model_two_round_debate confirmation pass unless skipped. "
+            "Ratings and quotes are accepted only from a validated JSON "
+            "contract; REVIEW, empty prices, and markdown-only output fail closed."
         ),
     )
     out.write_text(json.dumps(run.model_dump(mode="json"), indent=2), encoding="utf-8")

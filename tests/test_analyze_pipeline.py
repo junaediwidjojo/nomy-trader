@@ -21,19 +21,25 @@ def test_analyze_symbol_maps_tradingagents_payload() -> None:
     result = analyze_symbol(
         {
             "ticker": "FIZZ",
-            "signal": "Hold",
+            "signal": "REVIEW",
             "report_path": "/tmp/report.md",
-            "final_decision": (
-                "**Rating**: Hold\n\n"
-                "**Executive Summary**: Wait for rebound above $31.59.\n\n"
-                "**Price Target**: 34.0\n\n"
-                "**Time Horizon**: 6-12 months"
-            ),
+            "final_decision": "**Rating**: Hold\n\n**Price Target**: 34.0",
+            "structured_decision": {
+                "rating": "Hold",
+                "entry": "31.59",
+                "stop": "28.0",
+                "target": "34.0",
+                "horizon": "6-12 months",
+                "why": "Wait for rebound above the 10-day EMA.",
+            },
         },
         screened,
     )
     assert result.signal == "Hold"
     assert result.price_target == "34.0"
+    assert result.stop == "28.0"
+    assert result.entry_hint == "31.59"
+    assert result.error is None
     assert result.screened is screened
     assert result.report_path == "/tmp/report.md"
 
@@ -51,6 +57,41 @@ def test_qualifies_on_upside_uses_target_against_live_price() -> None:
     assert not qualifies_on_upside("Underweight", "40.0", Decimal("20.00"))
     assert not qualifies_on_upside("Hold", None, Decimal("20.00"))
     assert not qualifies_on_upside("Hold", "28.0", None)
+
+
+def test_analyze_symbol_fails_closed_on_markdown_without_json() -> None:
+    result = analyze_symbol(
+        {
+            "ticker": "FIZZ",
+            "signal": "Buy",
+            "final_decision": "**Rating**: Buy\n\n**Price Target**: 40.0",
+        },
+        None,
+    )
+    assert result.signal == "UNAVAILABLE"
+    assert result.price_target is None
+    assert result.error is not None
+    assert "JSON" in result.error or "structured" in result.error
+
+
+def test_analyze_symbol_fails_closed_on_review() -> None:
+    result = analyze_symbol(
+        {
+            "ticker": "FIZZ",
+            "structured_decision": {
+                "rating": "REVIEW",
+                "entry": 31.59,
+                "stop": 28.0,
+                "target": 34.0,
+                "horizon": "6-12 months",
+                "why": "No quote in this debate.",
+            },
+        },
+        None,
+    )
+    assert result.signal == "UNAVAILABLE"
+    assert result.error is not None
+    assert "REVIEW" in result.error
 
 
 def test_format_price() -> None:

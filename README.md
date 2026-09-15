@@ -93,18 +93,22 @@ seed list still exist in the repo; they are **not** the daily experiment path.
 Telegram and broker automation remain out of scope (ADR 005). Released under
 the [MIT License](LICENSE).
 
-Plans: [007 screen-analyze](docs/plans/007-ajaib-screen-analyze-mvp.md),
+Plans: [008 structured contract](docs/plans/008-structured-analyst-contract.md),
+[007 screen-analyze](docs/plans/007-ajaib-screen-analyze-mvp.md),
 [006 TradingAgents](docs/plans/006-tradingagents-integration.md). Product and
 policy: `docs/PRODUCT_SPEC.md`, `docs/TRADING_POLICY.md`, `AGENTS.md`.
 
-## AI-engineering learning (next)
+## AI-engineering learning
 
-The current LLM use is a **subprocess black box**: we set env vars, wait, parse
-`**Rating**` from markdown. That is a start, not an AI-engineer stack. Useful
-next practice, in order:
+The LLM path is still a **subprocess**, but nomy-trader now **owns the output
+contract**. A second JSON completion must return `{rating, entry, stop, target,
+horizon, why}`. `REVIEW`, empty quotes, and markdown-only text fail closed —
+there is no regex repair of `**Rating**`. Cached payloads from before this
+change also fail until TTL expiry or `--force-reanalyze`.
 
-1. **Structured outputs** — JSON schema for rating / entry / stop / target;
-   reject instead of regex-repairing `REVIEW`.
+Useful next practice, in order:
+
+1. **Done — structured outputs** — see plan 008.
 2. **Grounding** — inject FMP profile + Ajaib prints into the prompt so high
    model cannot claim “no quote in this debate.”
 3. **Eval set** — freeze a dated shortlist (AMGN, CRS, KGC, ARQQ, FMC) and
