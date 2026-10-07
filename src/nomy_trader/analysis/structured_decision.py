@@ -24,12 +24,16 @@ class AnalystRating(StrEnum):
 
 
 class AnalystDecision(Contract):
-    """Required quotes are advisory levels, not orders or position size."""
+    """Entry and stop are required advisory levels, not orders or size.
+
+    Target is optional: TradingAgents often omits **Price Target** while still
+    stating Overweight plus entry/stop. Those names stay useful.
+    """
 
     rating: AnalystRating
     entry: Positive
     stop: Positive
-    target: Positive
+    target: Positive | None = None
     horizon: Text
     why: Text
 
@@ -54,22 +58,11 @@ def analyst_decision_json_schema() -> dict[str, Any]:
             },
             "entry": {"type": "number"},
             "stop": {"type": "number"},
-            "target": {"type": "number"},
+            "target": {"type": ["number", "null"]},
             "horizon": {"type": "string", "minLength": 1},
             "why": {"type": "string", "minLength": 1},
         },
     }
-
-
-STRUCTURED_DECISION_SYSTEM = (
-    "Reply with a single JSON object only. Keys: rating, entry, stop, target, "
-    "horizon, why. rating must be exactly one of Buy, Overweight, Hold, "
-    "Underweight, Sell, or REVIEW. entry, stop, and target must be absolute "
-    "prices as JSON numbers (not percents, not ranges, not null). horizon is "
-    "the holding window. why is a short rationale. If you cannot name all "
-    "three prices from the analysis, set rating to REVIEW anyway — the "
-    "consumer will reject REVIEW. Do not wrap the object in markdown."
-)
 
 
 def _strip_markdown_fence(text: str) -> str:
@@ -94,6 +87,45 @@ def parse_json_object(text: str) -> dict[str, Any]:
     if not isinstance(loaded, dict):
         raise DecisionRejected("structured decision must be a JSON object")
     return loaded
+
+
+def _scalar_rating(value: object) -> object:
+    if isinstance(value, dict) and "value" in value:
+        return value["value"]
+    return value
+
+
+def decision_from_tradingagents(
+    portfolio: dict[str, Any] | None,
+    trader: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Map TradingAgents typed agent output onto the nomy-trader contract.
+
+    No extra LLM call. Fail closed when the graph fell back to markdown or
+    omitted entry/stop.
+    """
+    if not portfolio:
+        raise DecisionRejected(
+            "Portfolio Manager returned no structured object (markdown fallback)"
+        )
+    if not trader:
+        raise DecisionRejected(
+            "Trader returned no structured object (markdown fallback)"
+        )
+    why = portfolio.get("executive_summary") or portfolio.get("investment_thesis")
+    horizon = portfolio.get("time_horizon")
+    if not isinstance(why, str) or not why.strip():
+        raise DecisionRejected("Portfolio Manager omitted rationale")
+    if not isinstance(horizon, str) or not horizon.strip():
+        raise DecisionRejected("Portfolio Manager omitted time_horizon")
+    return {
+        "rating": _scalar_rating(portfolio.get("rating")),
+        "entry": trader.get("entry_price"),
+        "stop": trader.get("stop_loss"),
+        "target": portfolio.get("price_target"),
+        "horizon": horizon.strip(),
+        "why": why.strip(),
+    }
 
 
 def accept_analyst_decision(payload: dict[str, Any]) -> AnalystDecision:

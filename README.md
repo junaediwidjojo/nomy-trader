@@ -100,11 +100,11 @@ policy: `docs/PRODUCT_SPEC.md`, `docs/TRADING_POLICY.md`, `AGENTS.md`.
 
 ## AI-engineering learning
 
-The LLM path is still a **subprocess**, but nomy-trader now **owns the output
-contract**. A second JSON completion must return `{rating, entry, stop, target,
-horizon, why}`. `REVIEW`, empty quotes, and markdown-only text fail closed —
-there is no regex repair of `**Rating**`. Cached payloads from before this
-change also fail until TTL expiry or `--force-reanalyze`.
+The LLM path is still a **subprocess**, but nomy-trader **owns the output
+contract**. TradingAgents already asks the Portfolio Manager and Trader for
+typed JSON, then renders markdown for reports. The runner **intercepts** those
+Pydantic objects (no second LLM). If structured output fails and the graph
+falls back to markdown, the symbol is `UNAVAILABLE`.
 
 Useful next practice, in order:
 

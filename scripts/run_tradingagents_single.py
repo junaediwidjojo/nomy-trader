@@ -9,9 +9,18 @@ import sys
 import time
 from datetime import date
 from pathlib import Path
+from typing import Any
 
 NOMY_ROOT = Path(__file__).resolve().parents[1]
 NOMY_SRC = NOMY_ROOT / "src"
+
+_STRUCTURED_CONSUMERS = (
+    "tradingagents.agents.utils.structured",
+    "tradingagents.agents.managers.portfolio_manager",
+    "tradingagents.agents.managers.research_manager",
+    "tradingagents.agents.trader.trader",
+    "tradingagents.agents.analysts.sentiment_analyst",
+)
 
 
 def _load_nomy_env() -> None:
@@ -25,67 +34,43 @@ def _load_nomy_env() -> None:
             os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
 
 
-def _complete_structured_decision(
-    final_decision: str, model: str
-) -> tuple[str | None, str | None]:
-    """Ask the same backend for the nomy-trader JSON contract. Do not repair fields."""
-    sys.path.insert(0, str(NOMY_SRC))
-    from nomy_trader.analysis.structured_decision import (
-        STRUCTURED_DECISION_SYSTEM,
-        analyst_decision_json_schema,
-    )
+def _install_structured_capture(
+    captured: dict[str, Any], errors: dict[str, str]
+) -> None:
+    """Rebind invoke_structured_or_freetext on every agent module.
 
-    api_key = os.environ.get("OPENAI_COMPATIBLE_API_KEY") or os.environ.get(
-        "OPENAI_API_KEY"
-    )
-    base_url = os.environ.get("TRADINGAGENTS_LLM_BACKEND_URL")
-    if not api_key:
-        return None, "missing API key for structured decision"
-    try:
-        from openai import OpenAI
-    except ImportError:
-        return None, "openai package missing in TradingAgents venv"
-    client = OpenAI(api_key=api_key, base_url=base_url or None)
-    messages = [
-        {"role": "system", "content": STRUCTURED_DECISION_SYSTEM},
-        {
-            "role": "user",
-            "content": (
-                "Emit the JSON contract for this analysis. Absolute prices only. "
-                "If quotes are missing, rating must be REVIEW.\n\n"
-                f"{final_decision}"
-            ),
-        },
-    ]
-    schema = analyst_decision_json_schema()
-    try:
-        completion = client.chat.completions.create(
-            model=model,
-            messages=messages,
-            temperature=0,
-            response_format={
-                "type": "json_schema",
-                "json_schema": {
-                    "name": "analyst_decision",
-                    "strict": True,
-                    "schema": schema,
-                },
-            },
-        )
-    except Exception:
-        try:
-            completion = client.chat.completions.create(
-                model=model,
-                messages=messages,
-                temperature=0,
-                response_format={"type": "json_object"},
-            )
-        except Exception as exc:
-            return None, f"structured decision completion failed: {exc}"
-    content = completion.choices[0].message.content
-    if not content or not str(content).strip():
-        return None, "structured decision completion returned empty content"
-    return str(content), None
+    Agents bind the function at import time (``from ... import invoke``), so
+    patching only ``structured.py`` is not enough after those imports.
+    """
+
+    def invoke_structured_or_freetext(
+        structured_llm: Any,
+        plain_llm: Any,
+        prompt: Any,
+        render: Any,
+        agent_name: str,
+    ) -> str:
+        if structured_llm is not None:
+            try:
+                result = structured_llm.invoke(prompt)
+                if result is None:
+                    raise ValueError("structured output returned no parsed result")
+                captured[agent_name] = result.model_dump(mode="json")
+                return render(result)
+            except Exception as exc:
+                errors[agent_name] = f"{type(exc).__name__}: {exc}"
+                print(
+                    f"{agent_name} structured output failed ({type(exc).__name__})",
+                    file=sys.stderr,
+                )
+        captured.setdefault(agent_name, None)
+        response = plain_llm.invoke(prompt)
+        return response.content
+
+    for module_name in _STRUCTURED_CONSUMERS:
+        module = sys.modules.get(module_name)
+        if module is not None:
+            module.invoke_structured_or_freetext = invoke_structured_or_freetext
 
 
 def main() -> int:
@@ -95,9 +80,18 @@ def main() -> int:
     ticker = sys.argv[1].upper()
     _load_nomy_env()
     sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "TradingAgents"))
+    sys.path.insert(0, str(NOMY_SRC))
 
     from tradingagents.default_config import DEFAULT_CONFIG
     from tradingagents.graph.trading_graph import TradingAgentsGraph
+
+    from nomy_trader.analysis.structured_decision import (
+        DecisionRejected,
+        decision_from_tradingagents,
+    )
+
+    captured: dict[str, Any] = {}
+    capture_errors: dict[str, str] = {}
 
     config = DEFAULT_CONFIG.copy()
     config["results_dir"] = str(
@@ -108,13 +102,21 @@ def main() -> int:
         debug=False,
         config=config,
     )
+    _install_structured_capture(captured, capture_errors)
     started = time.monotonic()
     final_state, signal = graph.propagate(ticker, date.today().isoformat())
     elapsed_seconds = round(time.monotonic() - started, 1)
     report_path = graph.save_reports(final_state, ticker)
     final_decision = str(final_state.get("final_trade_decision") or "")
-    model = str(config.get("quick_think_llm") or config.get("deep_think_llm") or "")
-    structured, structured_error = _complete_structured_decision(final_decision, model)
+    structured: dict[str, Any] | None = None
+    structured_error: str | None = None
+    try:
+        structured = decision_from_tradingagents(
+            captured.get("Portfolio Manager"),
+            captured.get("Trader"),
+        )
+    except DecisionRejected as exc:
+        structured_error = str(exc)
     payload = {
         "ticker": ticker,
         "signal": signal,
@@ -122,6 +124,13 @@ def main() -> int:
         "final_decision": final_decision,
         "structured_decision": structured,
         "structured_decision_error": structured_error,
+        "structured_source": "tradingagents_structured",
+        "tradingagents_structured": {
+            "portfolio_manager": captured.get("Portfolio Manager"),
+            "trader": captured.get("Trader"),
+            "research_manager": captured.get("Research Manager"),
+        },
+        "tradingagents_structured_errors": capture_errors,
         "market_report_len": len(final_state.get("market_report") or ""),
         "fundamentals_report_len": len(final_state.get("fundamentals_report") or ""),
         "elapsed_seconds": elapsed_seconds,

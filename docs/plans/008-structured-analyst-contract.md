@@ -6,9 +6,16 @@ milestone 1: own the contract).
 ## 1. Goal and user-visible outcome
 
 nomy-trader accepts a TradingAgents review only when the runner supplies a JSON
-object matching `{rating, entry, stop, target, horizon, why}`. `REVIEW`,
-missing quotes, or prose-only markdown fail closed. The pipeline does not
-regex-repair `**Rating**` or invent prices.
+object matching `{rating, entry, stop, target, horizon, why}`. Entry and stop
+are required. Target may be null. `REVIEW`, missing entry/stop, or prose-only
+markdown fail closed. The pipeline does not regex-repair `**Rating**`.
+
+Deviation 2026-09-15: keep Buy/Overweight when entry and stop exist even if
+TradingAgents omitted a price target. REVIEW is only for missing entry/stop.
+
+Deviation 2026-09-15 (LLM use): intercept TradingAgents structured objects by
+rebinding `invoke_structured_or_freetext` on each agent module after import.
+No second extraction LLM. If Fireworks falls back to markdown, fail closed.
 
 CLI rows show `UNAVAILABLE` plus a rejection reason instead of a guessed Hold.
 
@@ -18,9 +25,9 @@ CLI rows show `UNAVAILABLE` plus a rejection reason instead of a guessed Hold.
 
 - Pydantic contract in nomy-trader.
 - JSON-only accept path in `analyze_symbol`.
-- One extra OpenAI-compatible completion in `run_tradingagents_single.py` that
-  must emit that JSON (schema / `json_object`). No field coercion.
-- Tests for accept, REVIEW, empty quotes, markdown-only, malformed JSON.
+- Capture TradingAgents Portfolio Manager + Trader structured dumps in the
+  runner and map them to the nomy-trader contract. No second LLM extraction.
+- Tests for accept, REVIEW, missing entry/stop, markdown-only, malformed JSON.
 
 **Non-goals**
 
@@ -37,10 +44,11 @@ CLI rows show `UNAVAILABLE` plus a rejection reason instead of a guessed Hold.
 
 ## 4. Design
 
-TradingAgents still produces markdown internally (and may emit `REVIEW` via its
-own rating regex). nomy-trader ignores that signal. After `graph.propagate`,
-the runner asks the same configured model for a single JSON object. nomy-trader
-validates with `extra=forbid` and required positive `entry` / `stop` / `target`.
+TradingAgents still produces markdown internally for reports. The Portfolio
+Manager and Trader already emit typed Pydantic objects; the runner captures
+those before `render_*` turns them into markdown. nomy-trader maps PM
+`rating` / `price_target` / `time_horizon` / `executive_summary` and Trader
+`entry_price` / `stop_loss`. Markdown fallback or missing entry/stop fail closed.
 
 `rating: REVIEW` is parseable then rejected so the error is explicit.
 
@@ -69,7 +77,8 @@ silent Hold default.
 ## 8. Tests
 
 - Valid JSON maps to signal and quotes.
-- REVIEW, omitted target, markdown-only, trailing comma → error, not Hold.
+- REVIEW, omitted stop, markdown-only, trailing comma → error, not Hold.
+- Overweight with entry/stop and null target is accepted.
 - `analyze_symbols` still records subprocess errors separately.
 
 ## 9. Rollback
@@ -79,5 +88,4 @@ remain harmless.
 
 ## 10. Open decisions
 
-None for this milestone. Hold still requires numeric quotes (user: empty quotes
-fail closed).
+None for this milestone. Target is optional; entry and stop are not.

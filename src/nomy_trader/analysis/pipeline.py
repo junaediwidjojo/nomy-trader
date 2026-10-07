@@ -173,7 +173,7 @@ def analyze_symbol(
             error=str(exc),
             report_path=report_path,
         )
-    target = format(decision.target, "f")
+    target = format(decision.target, "f") if decision.target is not None else None
     entry = format(decision.entry, "f")
     stop = format(decision.stop, "f")
     return SymbolAnalysis(

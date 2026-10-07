@@ -44,6 +44,28 @@ def test_analyze_symbol_maps_tradingagents_payload() -> None:
     assert result.report_path == "/tmp/report.md"
 
 
+def test_analyze_symbol_keeps_overweight_without_target() -> None:
+    result = analyze_symbol(
+        {
+            "ticker": "AMGN",
+            "structured_decision": {
+                "rating": "Overweight",
+                "entry": "381.5",
+                "stop": "373.5",
+                "target": None,
+                "horizon": "6-12 months",
+                "why": "Entry and stop stated; no price target section.",
+            },
+        },
+        None,
+    )
+    assert result.signal == "Overweight"
+    assert result.entry_hint == "381.5"
+    assert result.stop == "373.5"
+    assert result.price_target is None
+    assert result.error is None
+
+
 def test_is_bullish_signal() -> None:
     assert is_bullish_signal("Buy")
     assert is_bullish_signal("Overweight")
