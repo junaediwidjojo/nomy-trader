@@ -37,6 +37,14 @@ It is a **cost-aware screen-and-review pipeline**:
 Baseline is cheap and noisy. High model is expensive and conservative. Treat
 Overweight as a **research shortlist**, not a buy.
 
+Higher-model profiles use native strict JSON-schema output for the Portfolio
+Manager. Other agents keep their existing binding. Missing required fields
+still fail closed; markdown fallback
+is not a confirmation. This configuration has its own cache identity, so
+confirmation failures saved before the schema fix are not reused.
+The higher-model Portfolio Manager has an 8,192-token response budget; the
+shared 2,400-token cap could leave too little room for JSON after reasoning.
+
 ### Cheap filters worth keeping
 
 - Prefer **weekly drawdown**, not same-day crash ranking (ARQQ-style −18% 1d

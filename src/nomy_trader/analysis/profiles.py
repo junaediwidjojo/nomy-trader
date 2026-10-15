@@ -42,6 +42,8 @@ TRADINGAGENTS_PROFILES: dict[str, TradingAgentsProfile] = {
         name="high_model_one_round",
         description="One debate round with Qwen3.8 Max on Fireworks.",
         env_overrides={
+            "TRADINGAGENTS_STRUCTURED_METHOD": "json_schema",
+            "TRADINGAGENTS_PORTFOLIO_MAX_TOKENS": "8192",
             "TRADINGAGENTS_MAX_DEBATE_ROUNDS": "1",
             "TRADINGAGENTS_MAX_RISK_ROUNDS": "1",
             "TRADINGAGENTS_DEEP_THINK_LLM": HIGH_MODEL,
@@ -52,6 +54,8 @@ TRADINGAGENTS_PROFILES: dict[str, TradingAgentsProfile] = {
         name="high_model_two_round_debate",
         description="Two debate rounds with Qwen3.8 Max on Fireworks.",
         env_overrides={
+            "TRADINGAGENTS_STRUCTURED_METHOD": "json_schema",
+            "TRADINGAGENTS_PORTFOLIO_MAX_TOKENS": "8192",
             "TRADINGAGENTS_MAX_DEBATE_ROUNDS": "2",
             "TRADINGAGENTS_MAX_RISK_ROUNDS": "2",
             "TRADINGAGENTS_DEEP_THINK_LLM": HIGH_MODEL,

@@ -23,6 +23,64 @@ _STRUCTURED_CONSUMERS = (
 )
 
 
+class _JsonSchemaInvoker:
+    """Include schema instructions as well as provider-side constraints."""
+
+    def __init__(self, llm: Any, schema: Any, max_tokens: int | None = None) -> None:
+        if max_tokens is not None:
+            if max_tokens < 1:
+                raise ValueError("Portfolio Manager token budget must be positive")
+            # Clone only this decision client; do not inflate every debate call.
+            llm = llm.model_copy(update={"max_tokens": max_tokens})
+        self.bound = llm.with_structured_output(
+            schema, method="json_schema", strict=True
+        )
+        self.instructions = (
+            "Return one JSON object matching this schema. Include every required "
+            "field, including investment_thesis when requested. Use null only "
+            "where allowed; do not invent missing evidence or price levels.\n"
+            + json.dumps(schema.model_json_schema())
+        )
+
+    def invoke(self, prompt: Any) -> Any:
+        if isinstance(prompt, str):
+            prompt = prompt + "\n\n" + self.instructions
+        else:
+            messages = (
+                prompt.to_messages() if hasattr(prompt, "to_messages") else prompt
+            )
+            prompt = [*messages, {"role": "user", "content": self.instructions}]
+        return self.bound.invoke(prompt)
+
+
+def _install_structured_binding() -> None:
+    """Override agent-local bindings before graph construction, not after it.
+
+    Higher-model Portfolio Manager calls opt into native schema enforcement.
+    Other agents keep their provider's existing tool-calling dispatch.
+    """
+    method = os.getenv("TRADINGAGENTS_STRUCTURED_METHOD", "auto")
+    if method == "auto":
+        return
+    if method != "json_schema":
+        raise ValueError(f"unsupported structured method: {method}")
+
+    def portfolio_binding(default_bind: Any) -> Any:
+        def bind_structured(llm: Any, schema: Any, agent_name: str) -> Any:
+            if agent_name != "Portfolio Manager":
+                return default_bind(llm, schema, agent_name)
+            # Surface binding failures rather than silently disable enforcement.
+            budget = int(os.getenv("TRADINGAGENTS_PORTFOLIO_MAX_TOKENS", "8192"))
+            return _JsonSchemaInvoker(llm, schema, max_tokens=budget)
+
+        return bind_structured
+
+    for module_name in _STRUCTURED_CONSUMERS:
+        module = sys.modules.get(module_name)
+        if module is not None and hasattr(module, "bind_structured"):
+            module.bind_structured = portfolio_binding(module.bind_structured)
+
+
 def _load_nomy_env() -> None:
     env = NOMY_ROOT / ".env"
     if not env.exists():
@@ -97,6 +155,7 @@ def main() -> int:
     config["results_dir"] = str(
         Path.home() / ".tradingagents" / "logs" / "nomy-trader-session"
     )
+    _install_structured_binding()
     graph = TradingAgentsGraph(
         selected_analysts=("market", "fundamentals"),
         debug=False,
@@ -125,6 +184,9 @@ def main() -> int:
         "structured_decision": structured,
         "structured_decision_error": structured_error,
         "structured_source": "tradingagents_structured",
+        "structured_method": os.getenv("TRADINGAGENTS_STRUCTURED_METHOD", "auto"),
+        "structured_method_scope": "Portfolio Manager",
+        "portfolio_max_tokens": os.getenv("TRADINGAGENTS_PORTFOLIO_MAX_TOKENS"),
         "tradingagents_structured": {
             "portfolio_manager": captured.get("Portfolio Manager"),
             "trader": captured.get("Trader"),
