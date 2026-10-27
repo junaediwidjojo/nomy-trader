@@ -7,9 +7,9 @@ from __future__ import annotations
 
 import json
 from enum import StrEnum
-from typing import Any
+from typing import Any, Self
 
-from pydantic import ValidationError
+from pydantic import ValidationError, model_validator
 
 from nomy_trader.domain.models import Contract, Positive, Text
 
@@ -24,18 +24,30 @@ class AnalystRating(StrEnum):
 
 
 class AnalystDecision(Contract):
-    """Entry and stop are required advisory levels, not orders or size.
+    """Bullish ratings require advisory entry/stop; stand-aside may omit both.
 
     Target is optional: TradingAgents often omits **Price Target** while still
     stating Overweight plus entry/stop. Those names stay useful.
     """
 
     rating: AnalystRating
-    entry: Positive
-    stop: Positive
+    entry: Positive | None
+    stop: Positive | None
     target: Positive | None = None
     horizon: Text
     why: Text
+
+    @model_validator(mode="after")
+    def validate_advisory_levels(self) -> Self:
+        bullish = self.rating in (AnalystRating.BUY, AnalystRating.OVERWEIGHT)
+        if bullish and (self.entry is None or self.stop is None):
+            raise ValueError("bullish rating requires entry and stop")
+        if bullish and self.entry is not None and self.stop is not None:
+            if self.stop >= self.entry:
+                raise ValueError("long stop must be below entry")
+            if self.target is not None and self.target <= self.entry:
+                raise ValueError("long target must be above entry")
+        return self
 
 
 class DecisionRejected(ValueError):
@@ -56,8 +68,8 @@ def analyst_decision_json_schema() -> dict[str, Any]:
                 "type": "string",
                 "enum": [item.value for item in AnalystRating],
             },
-            "entry": {"type": "number"},
-            "stop": {"type": "number"},
+            "entry": {"type": ["number", "null"]},
+            "stop": {"type": ["number", "null"]},
             "target": {"type": ["number", "null"]},
             "horizon": {"type": "string", "minLength": 1},
             "why": {"type": "string", "minLength": 1},
@@ -102,7 +114,7 @@ def decision_from_tradingagents(
     """Map TradingAgents typed agent output onto the nomy-trader contract.
 
     No extra LLM call. Fail closed when the graph fell back to markdown or
-    omitted entry/stop.
+    omitted structured objects. Bullish price requirements are validated later.
     """
     if not portfolio:
         raise DecisionRejected(

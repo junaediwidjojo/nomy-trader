@@ -151,7 +151,8 @@ Production TradingAgents profile (locked in code as `baseline`):
 
 - Primary: `TRADINGAGENTS_MAX_DEBATE_ROUNDS=1`, `gpt-oss-120b`
 - If primary signal is **Buy** or **Overweight**, a confirmation pass runs with
-  `high_model_two_round_debate` (Qwen3.8 Max, 2 debate rounds, 900s timeout)
+  `high_model_two_round_debate` (DeepSeek V4.1 Flash research/portfolio
+  reviewers, GPT-OSS 120B analysts and debaters, 2 rounds, 900s timeout)
 
 TradingAgents results are cached locally for 48 hours per symbol and profile
 under `var/tradingagents_analysis_cache/`. A repeat `run` skips live AI calls
@@ -159,7 +160,21 @@ for symbols analyzed within that window.
 
 The runner intercepts TradingAgents' Portfolio Manager and Trader Pydantic
 objects before markdown render. No extra extraction LLM. Missing structured
-output becomes `UNAVAILABLE`. Target may be null; entry and stop are required.
+output becomes `UNAVAILABLE`. Buy/Overweight require positive entry and stop.
+Non-bullish ratings can explicitly set both prices to null: a valid Hold stays
+`Hold`, with no trade plan. Non-bullish partial pairs preserve the rating and
+set `advisory_plan_error`; they never count as complete plans. Missing keys
+and invalid prices still fail validation. Long stops must be below entry and
+targets above entry. A null target cannot pass buy confirmation.
+Financial tool results include the provider's statement and quote currencies.
+Unlabeled currencies block those tools; the adapter does not convert amounts
+or establish ADS/share equivalence. The fundamentals report is rendered in code
+from dated quarterly CSV cells and includes reproducible Decimal calculations,
+raw source documents and hashes. Fiscal-year labels, FX conversions and
+unverified EPS/share units are not inferred. Failed financial evidence stops
+the run. Model commentary and provider/issuer agreement remain unverified.
+Wrong tool ticker/symbol requests are scoped to the runner's requested stock
+before provider calls, with requested/effective arguments saved in the raw run.
 
 Optional flags:
 
@@ -171,6 +186,15 @@ uv run python -m nomy_trader compare-profiles --symbol NVO  # sandbox experiment
 ```
 
 Override cache TTL with `TRADINGAGENTS_CACHE_TTL_HOURS` (default: `48`).
+`--force-reanalyze` also disables the eight-hour FMP reuse and uses a fresh
+TradingAgents data/checkpoint directory for each analysis. Add `--fetch-catalog`
+to request a fresh Ajaib snapshot. Empty market or fundamentals reports stop
+the graph before debate, rather than producing a decision without reports.
+Both baseline and higher-profile managers use native JSON schema with independent
+8192-token output budgets; the Trader uses native JSON and 4096 tokens. The
+Portfolio Manager schema requires a nonempty time horizon. Missing structured
+Research Manager output blocks acceptance. Schema/price errors are never filled
+from prose, and no fixed horizon or missing price is invented.
 
 ## Running TradingAgents from nomy-trader
 

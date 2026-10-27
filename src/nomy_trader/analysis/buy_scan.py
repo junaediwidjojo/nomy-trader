@@ -76,11 +76,17 @@ def summarize_buy_candidates(
         status = "primary_only"
         if item.confirmatory is not None:
             confirm_signal = item.confirmatory.signal
-            if is_bullish_signal(item.confirmatory.signal):
+            if is_bullish_signal(item.confirmatory.signal) and getattr(
+                item.confirmatory, "advisory_plan_complete", False
+            ):
                 status = "confirmed"
                 confirmed_bullish.append(item.symbol)
             else:
-                status = "disputed"
+                status = (
+                    "incomplete_plan"
+                    if is_bullish_signal(item.confirmatory.signal)
+                    else "disputed"
+                )
                 disputed_bullish.append(item.symbol)
         rows.append(
             BuyCandidateRow(

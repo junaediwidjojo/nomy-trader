@@ -20,7 +20,8 @@ It is a **cost-aware screen-and-review pipeline**:
    so repeat runs do not burn the 250/day FMP budget.
 4. Run TradingAgents on the top N with **gpt-oss-120b, 1 debate round**
    (baseline). Cache hits skip the model for 48h per symbol+profile.
-5. **High-model re-verify** (`qwen3p8-max`, 2 rounds) only when you want it:
+5. **High-model re-verify** (DeepSeek V4.1 Flash reviewers, GPT-OSS analysts,
+   2 rounds) only when you want it:
    Buy/Overweight, or a Hold whose parsed target is ≥5% above the live FMP
    price. Use `--skip-confirm` to stay on the cheap model.
 
@@ -37,12 +38,12 @@ It is a **cost-aware screen-and-review pipeline**:
 Baseline is cheap and noisy. High model is expensive and conservative. Treat
 Overweight as a **research shortlist**, not a buy.
 
-Higher-model profiles use native strict JSON-schema output for the Portfolio
-Manager. Other agents keep their existing binding. Missing required fields
+Higher-model profiles use native strict JSON-schema output for the Research
+and Portfolio Managers. Other agents keep their existing binding. Missing required fields
 still fail closed; markdown fallback
 is not a confirmation. This configuration has its own cache identity, so
 confirmation failures saved before the schema fix are not reused.
-The higher-model Portfolio Manager has an 8,192-token response budget; the
+Each higher-model manager has an 8,192-token response budget; the
 shared 2,400-token cap could leave too little room for JSON after reasoning.
 
 ### Cheap filters worth keeping
@@ -75,6 +76,23 @@ fetch, and Fireworks via TradingAgents’ sibling checkout (see
 ```
 
 Do not pass `--force-reanalyze` unless you intend to spend Fireworks again.
+It bypasses saved model results, recent FMP observations, and TradingAgents'
+data/checkpoint cache. Use `--fetch-catalog` as well to refresh the Ajaib input.
+Both analyst reports must be nonempty before debate starts; missing evidence
+stops the run. Nonempty reports still require factual review.
+Baseline and higher-profile research/portfolio managers use native JSON schemas
+and separate 8192-token budgets; the Trader has a 4096-token budget. The
+portfolio horizon is required. Missing structured research review blocks acceptance.
+Provider tool symbols are scoped to the requested stock, with overrides recorded.
+The financial report is rendered from dated quarterly provider cells; Decimal
+calculations compare matching year-ago periods and retain original currencies.
+Raw source documents and hashes are saved with each result. Financial tables
+are not rewritten by an LLM. Other agents' commentary remains unverified, and
+provider data still needs reconciliation with issuer publications.
+Forced runs also check recent Yahoo bars so a null latest daily close cannot
+silently leave the model using an older completed session. Any recovered close
+requires a matching-date closing-session quote within that day's low/high;
+source timestamps are recorded in the runner output.
 
 Artifacts (gitignored): `var/screen_analyze_results.json`,
 `var/buy_candidates_latest.json`, `var/tradingagents_analysis_cache/`.
@@ -113,6 +131,14 @@ contract**. TradingAgents already asks the Portfolio Manager and Trader for
 typed JSON, then renders markdown for reports. The runner **intercepts** those
 Pydantic objects (no second LLM). If structured output fails and the graph
 falls back to markdown, the symbol is `UNAVAILABLE`.
+Valid non-bullish decisions can have null entry/stop levels and retain their
+rating. `Hold` with no levels means stand aside; it is not a model failure.
+Bullish ratings require positive entry and stop, ordered stop < entry < target
+when a target exists. A missing target remains a shortlist signal but cannot
+pass buy confirmation. Non-bullish partial prices retain the rating with an
+explicit incomplete-plan flag. Financial evidence now
+includes native statement and quote currency labels before analyst use;
+successful structured reviews alone do not establish factual accuracy.
 
 Useful next practice, in order:
 

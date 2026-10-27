@@ -91,6 +91,36 @@ def test_accept_json_string() -> None:
     assert decision.rating is AnalystRating.HOLD
 
 
+@pytest.mark.parametrize("rating", ["Hold", "Underweight", "Sell"])
+def test_stand_aside_can_explicitly_omit_both_prices(rating: str) -> None:
+    payload = dict(VALID, rating=rating, entry=None, stop=None, target=None)
+    decision = accept_analyst_decision({"structured_decision": payload})
+    assert decision.rating.value == rating
+    assert decision.entry is None
+    assert decision.stop is None
+
+
+@pytest.mark.parametrize("rating", ["Buy", "Overweight"])
+def test_bullish_without_prices_still_fails_closed(rating: str) -> None:
+    payload = dict(VALID, rating=rating, entry=None, stop=None)
+    with pytest.raises(DecisionRejected, match="schema"):
+        accept_analyst_decision({"structured_decision": payload})
+
+
+@pytest.mark.parametrize("stop,target", [(100, 120), (110, 120), (90, 100), (90, 95)])
+def test_invalid_long_price_ordering_is_rejected(stop, target):
+    payload = dict(VALID, rating="Buy", entry=100, stop=stop, target=target)
+    with pytest.raises(DecisionRejected, match="schema"):
+        accept_analyst_decision({"structured_decision": payload})
+
+
+@pytest.mark.parametrize("invalid", [0, -1, "NaN", "Infinity"])
+def test_nonbullish_invalid_supplied_prices_are_not_ignored(invalid: object) -> None:
+    payload = dict(VALID, entry=invalid)
+    with pytest.raises(DecisionRejected, match="schema"):
+        accept_analyst_decision({"structured_decision": payload})
+
+
 def test_review_fails_closed() -> None:
     payload = dict(VALID)
     payload["rating"] = "REVIEW"
@@ -116,7 +146,7 @@ def test_overweight_survives_without_target() -> None:
 
 
 def test_empty_quotes_fail_closed() -> None:
-    payload = dict(VALID)
+    payload = dict(VALID, rating="Buy")
     payload["entry"] = None
     with pytest.raises(DecisionRejected, match="schema"):
         accept_analyst_decision({"structured_decision": payload})

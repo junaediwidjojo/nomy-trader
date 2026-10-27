@@ -1,4 +1,6 @@
+from datetime import UTC, datetime
 from decimal import Decimal
+from pathlib import Path
 from unittest.mock import patch
 
 from nomy_trader.analysis.bullish import is_bullish_signal, qualifies_on_upside
@@ -64,6 +66,8 @@ def test_analyze_symbol_keeps_overweight_without_target() -> None:
     assert result.stop == "373.5"
     assert result.price_target is None
     assert result.error is None
+    assert result.advisory_plan_complete is False
+    assert result.advisory_plan_error == "incomplete advisory price plan"
 
 
 def test_is_bullish_signal() -> None:
@@ -71,6 +75,52 @@ def test_is_bullish_signal() -> None:
     assert is_bullish_signal("Overweight")
     assert not is_bullish_signal("Hold")
     assert not is_bullish_signal(None)
+
+
+def test_partial_nonbullish_plan_keeps_rating_but_is_explicitly_incomplete():
+    result = analyze_symbol(
+        {
+            "ticker": "PAGS",
+            "structured_decision": {
+                "rating": "Underweight",
+                "entry": 8.56,
+                "stop": None,
+                "target": None,
+                "horizon": "3 months",
+                "why": "Avoid new exposure.",
+            },
+        },
+        None,
+    )
+    assert result.signal == "Underweight"
+    assert result.error is None
+    assert result.entry_hint == "8.56"
+    assert result.stop is None
+    assert result.advisory_plan_complete is False
+    assert result.advisory_plan_error == "incomplete advisory price plan"
+
+
+def test_valid_hold_without_trade_plan_is_not_unavailable() -> None:
+    result = analyze_symbol(
+        {
+            "ticker": "NTES",
+            "structured_decision": {
+                "rating": "Hold",
+                "entry": None,
+                "stop": None,
+                "target": None,
+                "horizon": "3-6 months",
+                "why": "Wait for regulatory clarity.",
+            },
+        },
+        None,
+    )
+    assert result.signal == "Hold"
+    assert result.error is None
+    assert result.entry_hint is None
+    assert result.stop is None
+    assert result.price_target is None
+    assert not is_bullish_signal(result.signal)
 
 
 def test_qualifies_on_upside_uses_target_against_live_price() -> None:
@@ -129,3 +179,38 @@ def test_analyze_symbols_records_errors(mock_run) -> None:
     results = analyze_symbols(("FIZZ",))
     assert len(results) == 1
     assert results[0].error == "timeout"
+
+
+def test_force_refresh_bypasses_warm_result_and_requests_fresh_provider_data(
+    tmp_path: Path,
+) -> None:
+    from nomy_trader.analysis.cache import TradingAgentsCacheEntry, save_cache_entry
+    from nomy_trader.analysis.pipeline import _run_symbol_analysis
+
+    now = datetime(2026, 10, 15, tzinfo=UTC)
+    save_cache_entry(
+        TradingAgentsCacheEntry(
+            symbol="CRDO",
+            profile_key="test",
+            analyzed_at=now,
+            runner_payload={"ticker": "CRDO", "signal": "Buy"},
+        ),
+        project_root=tmp_path,
+    )
+    overrides = {"TRADINGAGENTS_QUICK_THINK_LLM": "test-model"}
+    with patch("nomy_trader.analysis.pipeline.run_tradingagents_subprocess") as run:
+        run.return_value = {"ticker": "CRDO", "signal": "Hold"}
+        result = _run_symbol_analysis(
+            "CRDO",
+            None,
+            env_overrides=overrides,
+            profile_key="test",
+            project_root=tmp_path,
+            timeout_seconds=60,
+            clock=now,
+            force_refresh=True,
+        )
+    assert result.source == "live"
+    assert result.signal == "UNAVAILABLE"  # Fresh unstructured output fails closed.
+    assert run.call_args.kwargs["env_overrides"]["NOMY_FORCE_FRESH_DATA"] == "1"
+    assert "NOMY_FORCE_FRESH_DATA" not in overrides

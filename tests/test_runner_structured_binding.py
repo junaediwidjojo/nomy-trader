@@ -35,6 +35,51 @@ def test_native_binding_sends_schema_and_preserves_required_thesis() -> None:
     assert "do not invent" in prompt
 
 
+def test_evidence_guard_stops_before_debate(monkeypatch: pytest.MonkeyPatch) -> None:
+    node = Mock(return_value={"debate": "started"})
+    module = SimpleNamespace(create_bull_researcher=Mock(return_value=node))
+    monkeypatch.setitem(runner.sys.modules, "tradingagents.graph.setup", module)
+    runner._install_evidence_guard()
+    guarded = module.create_bull_researcher(Mock())
+    with pytest.raises(ValueError, match="fundamentals_report"):
+        guarded({"market_report": "Evidence", "fundamentals_report": "   "})
+    node.assert_not_called()
+    state = {"market_report": "Market evidence", "fundamentals_report": "Financials"}
+    assert guarded(state) == {"debate": "started"}
+    node.assert_called_once_with(state)
+
+
+def test_confirmation_keeps_working_analysts_and_changes_reviewers() -> None:
+    env = confirm_buy_env_overrides()
+    assert env["TRADINGAGENTS_QUICK_THINK_LLM"] == (
+        "accounts/fireworks/models/gpt-oss-120b"
+    )
+    assert env["TRADINGAGENTS_DEEP_THINK_LLM"] == (
+        "accounts/fireworks/models/deepseek-v4p1-flash"
+    )
+
+
+def test_missing_research_blocks_otherwise_valid_buy(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from nomy_trader.analysis.structured_decision import DecisionRejected
+
+    monkeypatch.setenv("TRADINGAGENTS_STRUCTURED_METHOD", "json_schema")
+    captured = {
+        "Portfolio Manager": {
+            "rating": "Buy",
+            "executive_summary": "Evidence supports a long.",
+            "time_horizon": "3 months",
+            "price_target": 120,
+        },
+        "Trader": {"entry_price": 100, "stop_loss": 90},
+    }
+    with pytest.raises(DecisionRejected, match="Research Manager"):
+        runner._decision_from_captured(captured)
+    captured["Research Manager"] = {"recommendation": "Buy"}
+    assert runner._decision_from_captured(captured)["rating"] == "Buy"
+
+
 def test_message_prompt_retains_evidence_and_adds_json_instructions() -> None:
     llm = Mock()
     messages = [{"role": "user", "content": "Evidence"}]
@@ -67,10 +112,18 @@ def test_binding_reaches_agent_local_imports_and_capture_still_fails_closed(
     llm.with_structured_output.return_value.invoke.side_effect = invalid_response
     bound = modules[1].bind_structured(llm, PortfolioDecision, "Portfolio Manager")
     for module, original in zip(modules, originals, strict=True):
-        module.bind_structured(llm, PortfolioDecision, "Trader")
-        original.assert_called_once_with(llm, PortfolioDecision, "Trader")
+        module.bind_structured(llm, PortfolioDecision, "Market Analyst")
+        original.assert_called_once_with(llm, PortfolioDecision, "Market Analyst")
+        assert isinstance(
+            module.bind_structured(llm, PortfolioDecision, "Trader"),
+            runner._JsonSchemaInvoker,
+        )
         assert isinstance(
             module.bind_structured(llm, PortfolioDecision, "Portfolio Manager"),
+            runner._JsonSchemaInvoker,
+        )
+        assert isinstance(
+            module.bind_structured(llm, PortfolioDecision, "Research Manager"),
             runner._JsonSchemaInvoker,
         )
     captured: dict = {}
@@ -124,7 +177,9 @@ def test_corrected_confirmation_profile_does_not_reuse_old_cache() -> None:
     assert current["TRADINGAGENTS_STRUCTURED_METHOD"] == "json_schema"
     assert current["TRADINGAGENTS_PORTFOLIO_MAX_TOKENS"] == "8192"
     assert profile_cache_key(current) != profile_cache_key(old)
-    assert "TRADINGAGENTS_STRUCTURED_METHOD" not in default_run_env_overrides()
+    assert (
+        default_run_env_overrides()["TRADINGAGENTS_STRUCTURED_METHOD"] == "json_schema"
+    )
 
 
 def test_portfolio_budget_clones_client_without_changing_debate_budget() -> None:

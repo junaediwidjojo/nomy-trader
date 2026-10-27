@@ -5,6 +5,26 @@ from nomy_trader.analysis.buy_scan import summarize_buy_candidates
 from nomy_trader.analysis.pipeline import SymbolAnalysis
 
 
+def test_bullish_rating_without_complete_higher_plan_cannot_be_confirmed():
+    result = SymbolAnalysis(
+        symbol="AAA",
+        signal="Buy",
+        confirmatory=SymbolAnalysis(
+            symbol="AAA",
+            signal="Buy",
+            price_target=None,
+        ),
+    )
+    summary = summarize_buy_candidates(
+        (result,),
+        observed_at=datetime(2026, 10, 27, tzinfo=UTC),
+        catalogue_revision=None,
+        candidates_screened=1,
+    )
+    assert summary.confirmed_bullish == ()
+    assert summary.rows[0].status == "incomplete_plan"
+
+
 def test_summarize_buy_candidates_classifies_confirmation() -> None:
     now = datetime(2026, 9, 14, tzinfo=UTC)
     results = (
@@ -16,7 +36,9 @@ def test_summarize_buy_candidates_classifies_confirmation() -> None:
         SymbolAnalysis(
             symbol="BBB",
             signal="Overweight",
-            confirmatory=SymbolAnalysis(symbol="BBB", signal="Buy"),
+            confirmatory=SymbolAnalysis(
+                symbol="BBB", signal="Buy", advisory_plan_complete=True
+            ),
         ),
         SymbolAnalysis(symbol="CCC", signal="Hold"),
     )
@@ -40,7 +62,9 @@ def test_hold_with_material_target_upside_becomes_a_candidate() -> None:
             price_target="28.0",
             reference_price=Decimal("23.94"),
             target_upside=Decimal("0.1696"),
-            confirmatory=SymbolAnalysis(symbol="UPS", signal="Buy"),
+            confirmatory=SymbolAnalysis(
+                symbol="UPS", signal="Buy", advisory_plan_complete=True
+            ),
         ),
         SymbolAnalysis(
             symbol="FLAT",

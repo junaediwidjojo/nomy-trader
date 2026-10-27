@@ -67,6 +67,8 @@ class SymbolAnalysis(Contract):
     price_target: Text | None = None
     entry_hint: Text | None = None
     stop: Text | None = None
+    advisory_plan_complete: bool = False
+    advisory_plan_error: Text | None = None
     why: Text | None = None
     time_horizon: Text | None = None
     executive_summary: Text | None = None
@@ -174,8 +176,17 @@ def analyze_symbol(
             report_path=report_path,
         )
     target = format(decision.target, "f") if decision.target is not None else None
-    entry = format(decision.entry, "f")
-    stop = format(decision.stop, "f")
+    entry = format(decision.entry, "f") if decision.entry is not None else None
+    stop = format(decision.stop, "f") if decision.stop is not None else None
+    complete = (
+        is_bullish_signal(decision.rating.value)
+        and entry is not None
+        and stop is not None
+        and target is not None
+    )
+    incomplete = (entry is None) != (stop is None) or (
+        is_bullish_signal(decision.rating.value) and target is None
+    )
     return SymbolAnalysis(
         symbol=symbol,
         screened=screened,
@@ -184,6 +195,8 @@ def analyze_symbol(
         price_target=target,
         entry_hint=entry,
         stop=stop,
+        advisory_plan_complete=complete,
+        advisory_plan_error="incomplete advisory price plan" if incomplete else None,
         why=decision.why,
         time_horizon=decision.horizon,
         executive_summary=decision.why,
@@ -219,11 +232,14 @@ def _run_symbol_analysis(
             return analysis.model_copy(
                 update={"source": "cache", "analyzed_at": cached.analyzed_at}
             )
+    run_env = dict(env_overrides)
+    if force_refresh:
+        run_env["NOMY_FORCE_FRESH_DATA"] = "1"
     raw = run_tradingagents_subprocess(
         symbol,
         project_root=project_root,
         timeout_seconds=timeout_seconds,
-        env_overrides=env_overrides,
+        env_overrides=run_env,
     )
     analysis = analyze_symbol(raw, screened).model_copy(
         update={"source": "live", "analyzed_at": clock}
@@ -405,6 +421,7 @@ def run_analyze_pipeline(
             pool,
             now=now,
             quota_window=daily_fmp_prescreen_window(now),
+            reuse_recent=not force_refresh,
         )
     finally:
         if owns_client:

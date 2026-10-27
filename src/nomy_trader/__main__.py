@@ -105,7 +105,7 @@ def main() -> int:
     parser.add_argument(
         "--force-reanalyze",
         action="store_true",
-        help="Ignore TradingAgents cache and rerun live analysis",
+        help="Bypass saved analysis, FMP reuse, and TradingAgents data cache",
     )
     parser.add_argument(
         "--fetch-catalog",
@@ -283,10 +283,7 @@ def main() -> int:
                     metrics = row.metrics
                     extra = ""
                     if metrics is not None:
-                        extra = (
-                            f" close=${metrics.close} "
-                            f"1d {metrics.one_day_percent}%"
-                        )
+                        extra = f" close=${metrics.close} 1d {metrics.one_day_percent}%"
                     print(f"FMP_PASS {row.symbol}{extra}", flush=True)
                 else:
                     print(

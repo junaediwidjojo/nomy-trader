@@ -134,4 +134,9 @@ def test_recent_observations_are_reused_without_new_calls(tmp_path) -> None:
     assert first.rows[0].source == "live"
     assert second.rows[0].source == "cache"
     assert [item.hint.symbol for item in second.passed] == ["GOOD"]
+    forced = prescreen_ranked_hints(
+        engine, client, ranked, now=NOW, quota_window=window, reuse_recent=False
+    )
+    assert calls == ["GOOD", "GOOD"]
+    assert forced.rows[0].source == "live"
     engine.dispose()

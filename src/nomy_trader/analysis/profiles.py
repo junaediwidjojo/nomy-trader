@@ -14,7 +14,7 @@ class TradingAgentsProfile(Contract):
 
 
 BASELINE_MODEL = "accounts/fireworks/models/gpt-oss-120b"
-HIGH_MODEL = "accounts/fireworks/models/qwen3p8-max"
+HIGH_MODEL = "accounts/fireworks/models/deepseek-v4p1-flash"
 
 DEFAULT_RUN_PROFILE = "baseline"
 CONFIRM_BUY_PROFILE = "high_model_two_round_debate"
@@ -24,6 +24,11 @@ TRADINGAGENTS_PROFILES: dict[str, TradingAgentsProfile] = {
         name="baseline",
         description="Production default: 1 debate round, gpt-oss-120b.",
         env_overrides={
+            "NOMY_ANALYSIS_CONTRACT_VERSION": "3-deterministic-financials",
+            "TRADINGAGENTS_STRUCTURED_METHOD": "json_schema",
+            "TRADINGAGENTS_PORTFOLIO_MAX_TOKENS": "8192",
+            "TRADINGAGENTS_RESEARCH_MAX_TOKENS": "8192",
+            "TRADINGAGENTS_TRADER_MAX_TOKENS": "4096",
             "TRADINGAGENTS_MAX_DEBATE_ROUNDS": "1",
             "TRADINGAGENTS_MAX_RISK_ROUNDS": "1",
             "TRADINGAGENTS_DEEP_THINK_LLM": BASELINE_MODEL,
@@ -40,26 +45,28 @@ TRADINGAGENTS_PROFILES: dict[str, TradingAgentsProfile] = {
     ),
     "high_model_one_round": TradingAgentsProfile(
         name="high_model_one_round",
-        description="One debate round with Qwen3.8 Max on Fireworks.",
+        description="One round: GPT-OSS analysts, DeepSeek V4.1 Flash reviewers.",
         env_overrides={
             "TRADINGAGENTS_STRUCTURED_METHOD": "json_schema",
             "TRADINGAGENTS_PORTFOLIO_MAX_TOKENS": "8192",
+            "TRADINGAGENTS_RESEARCH_MAX_TOKENS": "8192",
             "TRADINGAGENTS_MAX_DEBATE_ROUNDS": "1",
             "TRADINGAGENTS_MAX_RISK_ROUNDS": "1",
             "TRADINGAGENTS_DEEP_THINK_LLM": HIGH_MODEL,
-            "TRADINGAGENTS_QUICK_THINK_LLM": HIGH_MODEL,
+            "TRADINGAGENTS_QUICK_THINK_LLM": BASELINE_MODEL,
         },
     ),
     "high_model_two_round_debate": TradingAgentsProfile(
         name="high_model_two_round_debate",
-        description="Two debate rounds with Qwen3.8 Max on Fireworks.",
+        description="Two rounds: GPT-OSS analysts, DeepSeek V4.1 Flash reviewers.",
         env_overrides={
             "TRADINGAGENTS_STRUCTURED_METHOD": "json_schema",
             "TRADINGAGENTS_PORTFOLIO_MAX_TOKENS": "8192",
+            "TRADINGAGENTS_RESEARCH_MAX_TOKENS": "8192",
             "TRADINGAGENTS_MAX_DEBATE_ROUNDS": "2",
             "TRADINGAGENTS_MAX_RISK_ROUNDS": "2",
             "TRADINGAGENTS_DEEP_THINK_LLM": HIGH_MODEL,
-            "TRADINGAGENTS_QUICK_THINK_LLM": HIGH_MODEL,
+            "TRADINGAGENTS_QUICK_THINK_LLM": BASELINE_MODEL,
         },
     ),
 }
